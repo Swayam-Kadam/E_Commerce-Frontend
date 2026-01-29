@@ -1,0 +1,51 @@
+import axios from "axios";
+import conf from "@/conf/conf";
+import Cookies, { cookieKeys } from "./cookies";
+
+const API_URL = `${conf.APIUrl}`;
+
+class Axios {
+  constructor(baseURL) {
+    this.axios = axios.create({
+      baseURL,
+    });
+    this.axios.interceptors.request.use(this._requestMiddleware);
+    this.axios.interceptors.response.use(
+      this._responseMiddleware,
+      this._responseErr
+    );
+  }
+
+  _requestMiddleware = (req) => {
+    // Send Bearer token on every request
+    const token = Cookies.get(cookieKeys?.TOKEN);
+
+    if (token)
+      req.headers.authorization = token.startsWith("Token")
+        ? token
+        : "Bearer " + token;
+    return req;
+  };
+
+  _responseMiddleware = (response) => {
+    if (response?.data?.tokens?.accessToken) {
+      Cookies.set(cookieKeys?.TOKEN, response.data?.tokens?.accessToken);
+    }
+    if (response?.data?.tokens?.refreshToken) {
+      Cookies.set(cookieKeys?.REFRESH_TOKEN, response?.data?.tokens?.refreshToken);
+    }
+    return response;
+  };
+
+  _responseErr = (error) => {
+    if (error?.response?.status === 401) {
+      Cookies.remove(cookieKeys.TOKEN);
+      Cookies.clear();
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  };
+}
+
+const axiosReact = new Axios(API_URL).axios;
+export { axiosReact };

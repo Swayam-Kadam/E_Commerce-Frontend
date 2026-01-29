@@ -1,0 +1,10 @@
+export const LOGIN = "/auth/login";
+export const SIGNUP = "/auth/register";
+export const GET_USER_PROFILE = "/auth/profile";
+export const REFRESH_TOKEN = "/auth/refresh-token";
+export const VALIDATE_TOKEN = "/auth/validate-token";
+export const LOGOUT = "/auth/logout";
+export const ADDPRODUCT = "/product/";
+export const FETCH_ALL_REVIEW = '/review';
+export const ADD_REVIEW = '/review/products/';
+

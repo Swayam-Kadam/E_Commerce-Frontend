@@ -1,0 +1,15 @@
+export default {
+  LOGIN: "/login",
+  SIGNUP: "/signup",
+  HOMEPAGE: "/",
+  PRODUCT_DETAIL: "/product/:id",
+  CATEGORY: "/category",
+  CATEGORY_WITH_NAME: "/category/:categoryName",
+  WISHLIST: "/wishlist",
+  CART: "/cart",
+  PROFILE: "/account",
+  ADMIN: "/admin/dashboard",
+  ADMIN_ADD_PRODUCT: "/admin/addproduct",
+  ADMIN_REVIEW: "/admin/review",
+  ADMIN_MANAGE: "/admin/manage",
+};

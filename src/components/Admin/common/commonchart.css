@@ -1,0 +1,81 @@
+.common-chart-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.chart-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.chart-data-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.chart-data-subcategory {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.subcategory-item {
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.subcategory-item:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.active-subcategory {
+  background: #007bff !important;
+  color: #fff !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chart-data-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .chart-data-subcategory {
+    gap: 10px;
+  }
+  
+  .subcategory-item {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  
+}
+
+@media(max-width:375px){
+    .apexcharts-legend{
+    margin-top: -30px;
+  }
+}
+
+@media(max-width:320px){
+    .apexcharts-legend{
+    margin-top: -50px;
+  }
+}
