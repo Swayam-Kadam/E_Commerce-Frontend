@@ -213,18 +213,6 @@ export const validateToken = createAsyncThunk(
   }
 );
 
-// const loginState = {
-//   token: token || "",
-//   refreshToken: refreshToken || "", // Add refresh token to state
-//   pageLoader: false,
-//   userDetail: user ? user : null, // Parse if stored as JSON string
-//   userProfile: null,
-//   userProfileLoading: false,
-//   isAuth: isAuthenticated,
-//   loading: false,
-//   refreshingToken: false, // Track token refresh state
-//   lastTokenRefresh: null, // Timestamp of last refresh
-// };
 
 
 // In loginState initialization

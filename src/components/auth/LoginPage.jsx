@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { motion } from 'framer-motion';
@@ -6,16 +6,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { cookieKeys } from "@/services/cookies";
 import Cookies from 'js-cookie';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { getLogin } from './slice/loginSlice';
 import { toast}  from 'react-toastify';
 import routesConstants from '@/routes/routesConstants';
+import PageLoader from '../common/PageLoader';
 
 const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
    const [authError, setAuthError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const { loading } = useSelector((state) => state.login || {});
 
   // Formik configuration with Yup validation
   const formik = useFormik({
@@ -241,14 +244,14 @@ const LoginPage = () => {
               <motion.div variants={itemVariants}>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={loading}
                   className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-colors hover:cursor-pointer ${
-                    isSubmitting
+                    loading
                       ? 'bg-[#71c9ff] cursor-not-allowed'
                       : 'bg-[#0289de] hover:bg-[#007ac7]'
                   }`}
                 >
-                  {isSubmitting ? (
+                  {loading ? (
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                       Signing in...
