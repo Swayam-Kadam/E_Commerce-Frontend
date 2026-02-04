@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { removeFromWishlist, clearWishlist, getAllWhishlist, toggleWhishlist, getWhishlistCount } from '../slice/WishlistSlice';
+import { removeFromWishlist, getAllWhishlist, toggleWhishlist, getWhishlistCount, clearWhishlist } from '../slice/WishlistSlice';
 import { addToCart } from '../../AddToCart/slice/CartSlice';
 import { useDispatch,useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import PageLoader from '@/components/common/PageLoader';
 
 const WishlistPage = () => {
   const dispatch = useDispatch();
@@ -50,10 +51,20 @@ const WishlistPage = () => {
   };
 
   const clearWishlistHandler = () => {
-    dispatch(clearWishlist());
+    dispatch(clearWhishlist()).then((res)=>{
+      if(res?.payload?.status === 200 || res?.payload?.status === 201){
+        toast.warning("Wishlist Clear Successfully")
+        dispatch(getAllWhishlist());
+        dispatch(getWhishlistCount());
+      }
+    });
   };
 
   console.log(allWhishlistData);
+
+  if(allWhishlistLoading){
+    return <PageLoader loadingState/>
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">

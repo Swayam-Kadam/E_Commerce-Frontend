@@ -2,7 +2,7 @@ import { toast } from "react-toastify";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { somethingWentWrong } from "@/constants/SchemaValidation";
 import { axiosReact } from "@/services/api";
-import { FETCH_ALL_WHISHLIST, TOGGLE_WHISHLIST, WHISHLIST_COUNT } from "@/services/url";
+import { FETCH_ALL_WHISHLIST, TOGGLE_WHISHLIST, WHISHLIST_CLEAR, WHISHLIST_COUNT } from "@/services/url";
 
 export const getAllWhishlist = createAsyncThunk(
   `whishlist/getAllWhishlist`,
@@ -42,6 +42,21 @@ export const getWhishlistCount = createAsyncThunk(
     }
   }
 );
+
+export const clearWhishlist = createAsyncThunk(
+  `whishlist/clearWhishlist`,
+  async (payload, thunkAPI) => { 
+    try {
+      const response = await axiosReact.delete(WHISHLIST_CLEAR); 
+      return response; 
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+WHISHLIST_CLEAR
 
 const initialState = {
   items: [],
