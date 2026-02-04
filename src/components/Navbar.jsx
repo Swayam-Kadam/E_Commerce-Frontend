@@ -14,6 +14,7 @@ import routesConfig from '@/routes/routes.config';
 import routesConstants from '@/routes/routesConstants';
 import { getUserProfile, logout, postLogout } from './auth/slice/loginSlice';
 import { toast } from 'react-toastify';
+import { getWhishlistCount } from './Wishlist/slice/WishlistSlice';
 useDispatch
 
 const Navbar = () => {
@@ -27,15 +28,18 @@ const Navbar = () => {
   const {  totalWishlistQuantity } = useSelector(state => state.wishlist);
   const {userDetail} = useSelector(state => state.login);
 
-  const { userProfile, userProfileLoading, userProfileFetched  } = useSelector(state => ({
+  const { userProfile, userProfileLoading, userProfileFetched, whishlistCount  } = useSelector(state => ({
     userProfile: state.login.userProfile,
     userProfileLoading: state.login.userProfileLoading,
-    userProfileFetched : state.login.userProfileFetched 
+    userProfileFetched : state.login.userProfileFetched,
+    whishlistCount: state?.wishlist?.whishlistCount?.data?.count,
     }));
-    
+
+    console.log(whishlistCount)
  useEffect(() => {
   if (!userProfileFetched) {
     dispatch(getUserProfile());
+    dispatch(getWhishlistCount());
   }
 }, [dispatch, userProfileFetched]);
 
@@ -334,7 +338,7 @@ const Navbar = () => {
               <Link to="/wishlist" className="text-gray-700 hover:text-[#0289de] relative">
                 <FiHeart className="h-6 w-6" />
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {totalWishlistQuantity}
+                  {whishlistCount}
                 </span>
               </Link>
               

@@ -1,17 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { removeFromWishlist, clearWishlist } from '../slice/WishlistSlice';
+import { removeFromWishlist, clearWishlist, getAllWhishlist, toggleWhishlist, getWhishlistCount } from '../slice/WishlistSlice';
 import { addToCart } from '../../AddToCart/slice/CartSlice';
 import { useDispatch,useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 
 const WishlistPage = () => {
   const dispatch = useDispatch();
   // const wishlistItems = useSelector(state => state.wishlist?.items) || [];
-   const { items: wishlistItems, totalWishlistQuantity } = useSelector(state => state.wishlist);
+   const { 
+  items: wishlistItems, 
+  totalWishlistQuantity,
+  allWhishlistData,
+  allWhishlistLoading 
+} = useSelector((state) => ({
+  items: state?.wishlist?.items,  // Changed from whishlist to wishlist
+  totalWishlistQuantity: state?.wishlist?.totalWishlistQuantity,
+  allWhishlistData: state?.wishlist?.allWhishlistData?.data?.data?.products,
+  allWhishlistLoading: state?.wishlist?.allWhishlistLoading,
+}));
+
+   useEffect(()=>{
+    dispatch(getAllWhishlist())
+   },[])
 
   const removeFromWishlistHandler = (id) => {
     dispatch(removeFromWishlist(id));
+    let payload={
+                  productId:id
+                }
+    dispatch(toggleWhishlist(payload?.productId)).then((res)=>{
+      if(res?.payload?.status === 200 || res?.payload?.status === 201){
+        toast.success("Whishlist Removed Successfully")
+        dispatch(getWhishlistCount());
+        dispatch(getAllWhishlist());
+      }
+    })
   };
 
   const moveToCart = (item) => {
@@ -28,6 +53,8 @@ const WishlistPage = () => {
     dispatch(clearWishlist());
   };
 
+  console.log(allWhishlistData);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <motion.h1 
@@ -36,10 +63,10 @@ const WishlistPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        Your Wishlist ({totalWishlistQuantity} {totalWishlistQuantity === 1 ? 'item' : 'items'})
+        Your Wishlist ({allWhishlistData?.length} {allWhishlistData?.length === 1 ? 'item' : 'items'})
       </motion.h1>
 
-      {wishlistItems.length === 0 ? (
+      {allWhishlistData?.length === 0 ? (
         <motion.div 
           className="text-center py-16"
           initial={{ opacity: 0 }}
@@ -66,7 +93,7 @@ const WishlistPage = () => {
             transition={{ delay: 0.2 }}
           >
             <button
-              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors"
+              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors cursor-pointer"
               onClick={clearWishlistHandler}
             >
               Clear Wishlist
@@ -80,7 +107,7 @@ const WishlistPage = () => {
             transition={{ duration: 0.5 }}
           >
             <AnimatePresence>
-              {wishlistItems.map((item, index) => (
+              {allWhishlistData?.map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -91,21 +118,26 @@ const WishlistPage = () => {
                 >
                   <div className="relative">
                     <img 
-                      src={item.image} 
-                      alt={item.name}
+                      src={item?.images[0]?.url} 
+                      alt={item?.images[0]?.filename}
                       className="w-full h-48 object-cover"
                     />
                     
                     <button 
                       className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md hover:bg-red-50"
-                      onClick={() => removeFromWishlistHandler(item.id)}
+                      onClick={() =>{ 
+                        let payload={
+                          productId:item._id
+                        }
+                        removeFromWishlistHandler(payload);
+                      }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                       </svg>
                     </button>
                     
-                    {!item.inStock && (
+                    {item.stock === 0 && (
                       <div className="absolute top-2 left-2 bg-gray-500 text-white text-xs font-semibold px-2 py-1 rounded">
                         Out of Stock
                       </div>
@@ -129,18 +161,18 @@ const WishlistPage = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-                          item.inStock 
-                            ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                          item.stock > 0 
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer' 
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                         onClick={() => item.inStock && moveToCart(item)}
                         disabled={!item.inStock}
                       >
-                        {item.inStock ? 'Add to Cart' : 'Out of Stock'}
+                        {item.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
                       </motion.button>
                       
                       <Link 
-                        to={`/product/${item.id}`}
+                        to={`/product/${item._id}`}
                         className="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
                       >
                         View

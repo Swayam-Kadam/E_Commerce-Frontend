@@ -7,4 +7,6 @@ export const LOGOUT = "/auth/logout";
 export const ADDPRODUCT = "/product/";
 export const FETCH_ALL_REVIEW = '/review';
 export const ADD_REVIEW = '/review/products/';
-
+export const FETCH_ALL_WHISHLIST ='/whishlist';
+export const TOGGLE_WHISHLIST = '/whishlist/toggle'
+export const WHISHLIST_COUNT = '/whishlist/count'

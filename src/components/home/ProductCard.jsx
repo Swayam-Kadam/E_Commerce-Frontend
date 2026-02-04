@@ -158,8 +158,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addToCart } from '../AddToCart/slice/CartSlice';
-import { addToWishlist, removeFromWishlist } from '../Wishlist/slice/WishlistSlice';
+import { addToWishlist, getWhishlistCount, removeFromWishlist, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -184,20 +185,34 @@ const ProductCard = ({ product }) => {
     }));
   };
 
-  const handleWishlist = (e) => {
-    e.stopPropagation();
-    if (isInWishlist) {
-      dispatch(removeFromWishlist(product._id));
-    } else {
-      dispatch(addToWishlist({
-        id: product._id,
-        name: product.name,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.image,
-        inStock: product.inStock,
-      }));
-    }
+  const handleWishlist = (id) => {
+    // e.stopPropagation();
+    // if (isInWishlist) {
+    //   dispatch(removeFromWishlist(product._id));
+    // } else {
+    //   dispatch(addToWishlist({
+    //     id: product._id,
+    //     name: product.name,
+    //     price: product.price,
+    //     originalPrice: product.originalPrice,
+    //     image: product.image,
+    //     inStock: product.inStock,
+    //   }));
+    // }
+    let payload={
+                      productId:id
+                    }
+                    console.log(payload)
+        dispatch(toggleWhishlist(payload)).then((res)=>{
+          if(res?.payload?.status === 200 || res?.payload?.status === 201){
+            dispatch(getWhishlistCount());
+            if(res?.payload?.data?.action === 'added'){
+              toast.success("Whishlist Added Successfully")
+            }else if(res?.payload?.data?.action === 'removed'){
+              toast.warning("Whishlist Removed Successfully")
+            }
+          }
+        })
   };
 
   // Handle colors from variants
@@ -266,7 +281,7 @@ const ProductCard = ({ product }) => {
   return (
     <div 
       className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col cursor-pointer"
-      onClick={handleViewClick}
+      // onClick={handleViewClick}
     >
       <div className="relative">
         <img 
@@ -297,7 +312,7 @@ const ProductCard = ({ product }) => {
         {/* Favorite button */}
         <button 
           className="absolute top-2 right-2 bg-white p-1.5 rounded-full shadow-md hover:bg-red-50"
-          onClick={handleWishlist}
+          onClick={()=>handleWishlist(product._id)}
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
