@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { removeFromCart, removeItemCompletely, updateItemQuantity, clearCart } from '../slice/CartSlice';
+import { removeFromCart, removeItemCompletely, updateItemQuantity, clearCart, getCart } from '../slice/CartSlice';
 import { useDispatch,useSelector } from 'react-redux';
 import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa";
@@ -9,7 +9,17 @@ import { FaMinusCircle,FaPlusCircle } from "react-icons/fa";
 
 const AddtocartPage = () => {
   const dispatch = useDispatch();
-  const { items: cartItems, totalQuantity, totalAmount } = useSelector(state => state.cart);
+  const { cartItems, totalQuantity, totalAmount } = useSelector((state) => ({
+    Item: state?.cart?.Item,
+    cartItems: state?.cart?.cartItems,  // Changed from whishlist to wishlist
+    totalQuantity: state?.cart?.totalQuantity,
+    allWhishlistData: state?.cart?.allWhishlistData,
+    allWhishlistLoading: state?.cart?.allWhishlistLoading,
+  }));
+
+  const productItem = cartItems?.items?.map(p=>p?.product)
+
+  console.log("product:-",productItem);
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return;
@@ -20,10 +30,17 @@ const AddtocartPage = () => {
     dispatch(removeItemCompletely(id));
   };
 
-  const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  // const subtotal = cartItems?.reduce((total, item) => total + (item?.price * item?.quantity), 0);
+  const subtotal = cartItems?.total
   const shipping = subtotal > 0 ? 5.99 : 0;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
+
+  useEffect(()=>{
+    dispatch(getCart());
+  },[])
+
+  console.log("cart:-",cartItems)
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -36,7 +53,7 @@ const AddtocartPage = () => {
         Shopping Cart ({totalQuantity} {totalQuantity === 1 ? 'item' : 'items'})
       </motion.h1>
 
-      {cartItems.length === 0 ? (
+      {productItem?.length === 0 ? (
         <motion.div 
           className="text-center py-16"
           initial={{ opacity: 0 }}
@@ -58,7 +75,7 @@ const AddtocartPage = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <AnimatePresence>
-              {cartItems.map((item, index) => (
+              {productItem?.map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -82,16 +99,16 @@ const AddtocartPage = () => {
                   </div>
                   
                   <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-                    <div className="flex items-center border rounded-md">
+                    <div className="flex items-center">
                       <button 
-                        className="px-3 py-1 text-gray-600 hover:text-red-600 cursor-pointer"
+                        className="px-1 py-1 text-[#0289de] hover:text-red-600 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       >
                         <FaMinusCircle />
                       </button>
-                      <span className="px-3 py-1 border-l border-r">{item.quantity}</span>
+                      <span className="px-1 py-1">{item.quantity}</span>
                       <button 
-                        className="px-3 py-1 text-gray-600 hover:text-red-600 cursor-pointer"
+                        className="px-1 py-1 text-[#0289de] hover:text-red-600 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       >
                         <FaPlusCircle />
@@ -112,7 +129,7 @@ const AddtocartPage = () => {
             </AnimatePresence>
 
             {/* Clear Cart Button */}
-            {cartItems.length > 0 && (
+            {cartItems?.length > 0 && (
               <motion.button
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -137,17 +154,17 @@ const AddtocartPage = () => {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal ({totalQuantity} items)</span>
-                <span className="text-gray-800">${subtotal.toFixed(2)}</span>
+                <span className="text-gray-800">${subtotal?.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
-                <span className="text-gray-800">${shipping.toFixed(2)}</span>
+                <span className="text-gray-800">${shipping?.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax</span>
-                <span className="text-gray-800">${tax.toFixed(2)}</span>
+                <span className="text-gray-800">${tax?.toFixed(2)}</span>
               </div>
               
               <div className="border-t pt-3 mt-3">

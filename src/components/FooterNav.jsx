@@ -67,7 +67,7 @@ const FooterNav = () => {
 
               {/* Conditionally render the count span for Wishlist */}
                 {item.icon === HiHeart &&
-                <span className="absolute -top-[-5px] -right-[-20px] bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center transform translate-x-1/2 -translate-y-1/2">
+                <span className="absolute -top-[-5px] -right-[-20px] bg-[#0289de] text-white text-xs rounded-full h-4 w-4 flex items-center justify-center transform translate-x-1/2 -translate-y-1/2">
                   {totalWishlistQuantity}
                 </span>
                 }

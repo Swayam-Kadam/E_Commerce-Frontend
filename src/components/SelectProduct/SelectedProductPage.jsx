@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../AddToCart/slice/CartSlice';
-import { addToWishlist, removeFromWishlist } from '../Wishlist/slice/WishlistSlice';
+import { addToWishlist, getWhishlistCount, removeFromWishlist, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Rating } from '@smastrom/react-rating';
@@ -12,6 +12,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { getSpecificProduct } from '../home/slice/index'; // Import submitReview if available
 import { addSpecificProductReview, getSpecificProductReview } from './slice';
 import { FaPlus, FaMinus } from "react-icons/fa";
+import PageLoader from '../common/PageLoader';
 
 const SelectedProductPage = () => {
   const { id } = useParams();
@@ -133,26 +134,45 @@ const SelectedProductPage = () => {
     }
   };
 
-  const handleWishlist = (e) => {
-    e.stopPropagation();
-    if (!product) return;
+  // const handleWishlist = (e) => {
+  //   e.stopPropagation();
+  //   if (!product) return;
     
-    if (isInWishlist) {
-      dispatch(removeFromWishlist(product._id));
-      toast.warning("Removed from wishlist");
-    } else {
-      dispatch(addToWishlist({
-        id: product._id,
-        name: product.name,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.images?.[0]?.url || product.image,
-        inStock: product.stock > 0,
-      }));
-      toast.success("Added to wishlist");
-    }
-  };
+  //   if (isInWishlist) {
+  //     dispatch(removeFromWishlist(product._id));
+  //     toast.warning("Removed from wishlist");
+  //   } else {
+  //     dispatch(addToWishlist({
+  //       id: product._id,
+  //       name: product.name,
+  //       price: product.price,
+  //       originalPrice: product.originalPrice,
+  //       image: product.images?.[0]?.url || product.image,
+  //       inStock: product.stock > 0,
+  //     }));
+  //     toast.success("Added to wishlist");
+  //   }
+  // };
 
+   const handleWishlist = (ids) => {
+        let payload={
+                       productId:ids
+                     }
+                     console.log(payload)
+         dispatch(toggleWhishlist(payload)).then((res)=>{
+           if(res?.payload?.status === 200 || res?.payload?.status === 201){
+            //  dispatch(getWhishlistCount());
+             if(res?.payload?.data?.action === 'added'){
+               toast.success("Whishlist Added Successfully")
+               dispatch(getSpecificProduct(id));
+             }else if(res?.payload?.data?.action === 'removed'){
+               toast.warning("Whishlist Removed Successfully")
+               dispatch(getSpecificProduct(id));
+             }
+           }
+         })
+   };
+ 
   // Get related products (same category, excluding current product)
   const relatedProducts = allProducts
     .filter(p => p._id !== id && p.category === product?.category)
@@ -170,9 +190,7 @@ const SelectedProductPage = () => {
 
   if (loading || specificProductLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8 flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+      <PageLoader/>
     );
   }
 
@@ -189,9 +207,8 @@ const SelectedProductPage = () => {
   const productImages = product.images?.map(img => img.url) || [product.image].filter(Boolean);
   const mainImage = productImages[selectedImage] || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80';
 
-  return (
+  return ( 
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover />
       
       {/* Product Details Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
@@ -354,11 +371,11 @@ const SelectedProductPage = () => {
             
             <button 
               className="p-3 rounded-md bg-[#0289de] hover:bg-[#007ac7] cursor-pointer"
-              onClick={handleWishlist}
+              onClick={()=>handleWishlist(product._id)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" 
-                className={isInWishlist ? "h-6 w-6 text-red-500 hover:text-red-700 cursor-pointer" : "h-6 w-6 text-white hover:text-red-700 cursor-pointer"} 
-                fill={isInWishlist ? "red" : "none"} 
+                className={product?.isWishlist ? "h-6 w-6 text-red-500 hover:text-red-700 cursor-pointer" : "h-6 w-6 text-white hover:text-red-700 cursor-pointer"} 
+                fill={product?.isWishlist ? "red" : "none"} 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
               >
