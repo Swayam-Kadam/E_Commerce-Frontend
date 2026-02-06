@@ -1,25 +1,25 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { removeFromCart, removeItemCompletely, updateItemQuantity, clearCart, getCart } from '../slice/CartSlice';
+import { removeFromCart, removeItemCompletely, updateItemQuantity, clearCart, getCart, removeCart, cleaAllCart, getCartCount } from '../slice/CartSlice';
 import { useDispatch,useSelector } from 'react-redux';
 import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa";
 import { FaMinusCircle,FaPlusCircle } from "react-icons/fa";
+import { toast } from 'react-toastify';
 
 const AddtocartPage = () => {
   const dispatch = useDispatch();
   const { cartItems, totalQuantity, totalAmount } = useSelector((state) => ({
-    Item: state?.cart?.Item,
     cartItems: state?.cart?.cartItems,  // Changed from whishlist to wishlist
     totalQuantity: state?.cart?.totalQuantity,
     allWhishlistData: state?.cart?.allWhishlistData,
     allWhishlistLoading: state?.cart?.allWhishlistLoading,
   }));
 
-  const productItem = cartItems?.items?.map(p=>p?.product)
+  const productItem = cartItems?.items
 
-  console.log("product:-",productItem);
+  console.log("product:-",cartItems);
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return;
@@ -27,7 +27,24 @@ const AddtocartPage = () => {
   };
 
   const removeItem = (id) => {
-    dispatch(removeItemCompletely(id));
+    console.log(id)
+    dispatch(removeCart(id)).then((res)=>{
+      if(res?.payload?.status === 200 || res?.payload?.status === 201){
+        toast?.success("cart Removed SuccessFully");
+        dispatch(getCart());
+        dispatch(getCartCount());
+      }
+    });
+  };
+
+  const handleClear = () => {
+    dispatch(cleaAllCart()).then((res)=>{
+      if(res?.payload?.status === 200 || res?.payload?.status === 201){
+        toast?.success("cart Cleared SuccessFully");
+        dispatch(getCart());
+        dispatch(getCartCount());
+      }
+    });
   };
 
   // const subtotal = cartItems?.reduce((total, item) => total + (item?.price * item?.quantity), 0);
@@ -50,7 +67,7 @@ const AddtocartPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        Shopping Cart ({totalQuantity} {totalQuantity === 1 ? 'item' : 'items'})
+        Shopping Cart ({cartItems?.items?.length} {cartItems?.items?.length === 1 ? 'item' : 'items'})
       </motion.h1>
 
       {productItem?.length === 0 ? (
@@ -85,15 +102,15 @@ const AddtocartPage = () => {
                   className="bg-white rounded-lg shadow-md p-4 mb-4 flex flex-col sm:flex-row items-center"
                 >
                   <img 
-                    src={item.image} 
-                    alt={item.name}
+                    src={item?.product?.images[0]?.url} 
+                    alt={item?.product?.images[0]?.filename}
                     className="w-24 h-24 object-cover rounded-lg mb-4 sm:mb-0 sm:mr-6"
                   />
                   
                   <div className="flex-grow">
-                    <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{item?.product?.name}</h3>
                     <p className="text-gray-600 text-sm mt-1">
-                      {item.color} • {item.size}
+                      {item?.variant?.color} • {item?.variant?.size}
                     </p>
                     <p className="text-lg font-bold text-gray-900 mt-2">${item.price.toFixed(2)}</p>
                   </div>
@@ -106,7 +123,7 @@ const AddtocartPage = () => {
                       >
                         <FaMinusCircle />
                       </button>
-                      <span className="px-1 py-1">{item.quantity}</span>
+                      <span className="px-1 py-1">{item?.quantity}</span>
                       <button 
                         className="px-1 py-1 text-[#0289de] hover:text-red-600 cursor-pointer"
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
@@ -116,8 +133,8 @@ const AddtocartPage = () => {
                     </div>
                     
                     <button 
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => removeItem(item.id)}
+                      className="text-red-500 hover:text-red-700 cursor-pointer "
+                      onClick={() => removeItem(item?._id)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -129,13 +146,14 @@ const AddtocartPage = () => {
             </AnimatePresence>
 
             {/* Clear Cart Button */}
-            {cartItems?.length > 0 && (
+            {productItem?.length > 0 && (
               <motion.button
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors"
-                onClick={() => dispatch(clearCart())}
+                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors cursor-pointer"
+                // onClick={() => dispatch(clearCart())}
+                onClick={()=>handleClear()}
               >
                 Clear Cart
               </motion.button>

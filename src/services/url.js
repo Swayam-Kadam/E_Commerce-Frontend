@@ -12,3 +12,7 @@ export const TOGGLE_WHISHLIST = '/whishlist/toggle'
 export const WHISHLIST_COUNT = '/whishlist/count'
 export const WHISHLIST_CLEAR = '/whishlist/clear'
 export const FETCH_ALL_CART = '/cart';
+export const REMOVE_CART = '/cart/remove/';
+export const CLEAR_CART = '/cart/clear';
+export const CART_COUNT = '/cart/count'
+export const CART_ADD = '/cart/add';

@@ -1,6 +1,6 @@
 import { somethingWentWrong } from '@/constants/SchemaValidation';
 import { axiosReact } from '@/services/api';
-import { FETCH_ALL_CART } from '@/services/url';
+import { CART_ADD, CART_COUNT, CLEAR_CART, FETCH_ALL_CART, REMOVE_CART } from '@/services/url';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 
@@ -17,12 +17,67 @@ export const getCart = createAsyncThunk(
   }
 );
 
+export const removeCart = createAsyncThunk(
+  `cart/removeCart`,
+  async (payload, thunkAPI) => { 
+    try {
+      const response = await axiosReact.delete(REMOVE_CART + `${payload}`); 
+      return response; 
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+export const cleaAllCart = createAsyncThunk(
+  `cart/clearCart`,
+  async (payload, thunkAPI) => { 
+    try {
+      const response = await axiosReact.delete(CLEAR_CART); 
+      return response; 
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+export const getCartCount = createAsyncThunk(
+  `cart/getCartCount`,
+  async (payload, thunkAPI) => { 
+    try {
+      const response = await axiosReact.get(CART_COUNT); 
+      return response; 
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+export const addCart = createAsyncThunk(
+  `cart/addCart`,
+  async (payload, thunkAPI) => { 
+    try {
+      const response = await axiosReact.get(CART_ADD,payload); 
+      return response; 
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+
 const initialState = {
   items: [],
   totalQuantity: 0,
   totalAmount: 0,
   cartItems:[],
   cartItemLoading:false,
+  cartCount:0,
+  cartCountLoading:false,
 };
 
 const cartSlice = createSlice({
@@ -113,6 +168,22 @@ const cartSlice = createSlice({
           state.cartItems = []
           state.cartItemLoading = false;
         });
+
+        //cart count
+              builder.addCase(getCartCount.pending, (state) => {
+                state.cartCount = 0
+                state.cartCountLoading = true;
+              });
+              
+              builder.addCase(getCartCount.fulfilled, (state, action) => {
+                state.cartCount = action.payload
+                state.cartCountLoading = false;
+              });
+              
+              builder.addCase(getCartCount.rejected, (state) => {
+                state.cartCount = 0
+                state.cartCountLoading = false;
+              });
       },
 });
 

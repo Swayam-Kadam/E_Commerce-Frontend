@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addToCart } from '../AddToCart/slice/CartSlice';
+import { addToCart, getCartCount } from '../AddToCart/slice/CartSlice';
 import { addToWishlist, getWhishlistCount, removeFromWishlist, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -19,15 +19,78 @@ const ProductCard = ({ product }) => {
     navigate(`/product/${product._id}`);
   };
 
-  const handleAddToCart = (e) => {
-    e.stopPropagation();
-    dispatch(addToCart({
-      id: product._id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-    }));
+  // const handleAddToCart = (value) => {
+  //   console.log("addTocart:-",value)
+  //   // e.stopPropagation();
+  //   // dispatch(addToCart({
+  //   //   id: product._id,
+  //   //   name: product.name,
+  //   //   price: product.price,
+  //   //   image: product.image,
+  //   // }));
+  //       let payload={
+  //                     productId:value?._id,
+  //                     variant:{color:value?.variants?.color,size:value?.variants?.size},
+  //                     quantity:1
+  //                   }
+  //       dispatch(addToCart(payload)).then((res)=>{
+  //         if(res?.payload?.status === 200 || res?.payload?.status === 201){
+  //           dispatch(getCartCount());
+  //             toast.success("Cart Added Successfully")
+  //             dispatch(getProduct());
+  //         }
+  //       })
+  // };
+
+  const handleAddToCart = (product) => {
+  console.log("addToCart product:", product);
+  
+  // Check if product exists
+  if (!product || !product._id) {
+    toast.error("Invalid product");
+    return;
+  }
+  
+  // Check stock availability
+  if (!product.stock || product.stock === 0) {
+    toast.error("Product is out of stock");
+    return;
+  }
+  
+  // Create payload with selected variants (from component state)
+  let payload = {
+    productId: product._id,
+    variant: {
+      color: product?.variants?.color || null, // Use component state
+      size: product?.variants?.size || null    // Use component state
+    },
+    quantity: 1 // Use component state
   };
+  
+  console.log("Cart payload:", payload);
+  
+  dispatch(addToCart(payload))
+    .then((res) => {
+      if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+        dispatch(getCartCount());
+        toast.success("Product added to cart successfully!");
+        dispatch(getProduct()); // Refresh products if needed
+        
+        // Optional: Reset quantity
+        // setQuantity(1);
+      } else {
+        // Handle other success statuses or unexpected response
+        toast.error("Failed to add to cart");
+      }
+    })
+    .catch((error) => {
+      console.error("Add to cart error:", error);
+      toast.error("Failed to add to cart. Please try again.");
+    })
+    .finally(() => {
+      // Any cleanup if needed
+    });
+};
 
   const handleWishlist = (id) => {
     let payload={
@@ -221,7 +284,7 @@ const ProductCard = ({ product }) => {
             </button>
             <button 
               className=" text-white px-3 py-1.5 rounded-sm text-sm font-medium  transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
-              onClick={handleAddToCart}
+              onClick={()=>handleAddToCart(product)}
               disabled={product.stock < 1}
               style={{backgroundColor:'#0289DE'}}
             >
