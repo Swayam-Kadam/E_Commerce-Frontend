@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../AddToCart/slice/CartSlice';
+import { addCart, addToCart, getCartCount } from '../AddToCart/slice/CartSlice';
 import { addToWishlist, getWhishlistCount, removeFromWishlist, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -118,21 +118,21 @@ const SelectedProductPage = () => {
     }
   }, [productData]);
 
-  const handleAddToCart = (e) => {
-    e.stopPropagation();
-    if (product) {
-      dispatch(addToCart({
-        id: product._id,
-        name: product.name,
-        price: product.price,
-        image: product.images?.[0]?.url || product.image,
-        quantity: quantity,
-        color: selectedColor,
-        size: selectedSize
-      }));
-      toast.success("Product added to cart!");
-    }
-  };
+  // const handleAddToCart = (e) => {
+  //   e.stopPropagation();
+  //   if (product) {
+  //     dispatch(addToCart({
+  //       id: product._id,
+  //       name: product.name,
+  //       price: product.price,
+  //       image: product.images?.[0]?.url || product.image,
+  //       quantity: quantity,
+  //       color: selectedColor,
+  //       size: selectedSize
+  //     }));
+  //     toast.success("Product added to cart!");
+  //   }
+  // };
 
   // const handleWishlist = (e) => {
   //   e.stopPropagation();
@@ -153,6 +153,55 @@ const SelectedProductPage = () => {
   //     toast.success("Added to wishlist");
   //   }
   // };
+
+    const handleAddToCart = () => {
+    console.log("addToCart product:", product);
+    
+    // Check if product exists
+    if (!product || !product._id) {
+      toast.error("Invalid product");
+      return;
+    }
+    
+    // Check stock availability
+    if (!product.stock || product.stock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+    
+    // Create payload with selected variants (from component state)
+    let payload = {
+      productId: product._id,
+      variant: {
+        color: selectedColor || null, // Use component state
+        size: selectedSize || null    // Use component state
+      },
+      quantity: quantity // Use component state
+    };
+    
+    console.log("Cart payload:", payload);
+    
+    dispatch(addCart(payload)).then((res) => {
+        if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+          dispatch(getCartCount());
+          toast.success("Product added to cart successfully!");
+          dispatch(getSpecificProduct(id)); // Refresh products if needed
+          
+          // Optional: Reset quantity
+          // setQuantity(1);
+        } else {
+          // Handle other success statuses or unexpected response
+          toast.error("Failed to add to cart");
+        }
+      })
+      .catch((error) => {
+        console.error("Add to cart error:", error);
+        toast.error("Failed to add to cart. Please try again.");
+      })
+      .finally(() => {
+        // Any cleanup if needed
+      });
+  };
 
    const handleWishlist = (ids) => {
         let payload={
@@ -364,9 +413,11 @@ const SelectedProductPage = () => {
             <button 
               className="flex-1  text-white py-3 px-6 rounded-md bg-[#0289de] hover:bg-[#007ac7] transition-colors font-medium cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
               onClick={handleAddToCart}
-              disabled={!product.stock || product.stock === 0}
+              disabled={product.stock < 1 || product?.cartInfo?.inCart}
+              style={{backgroundColor:product.stock < 1 || product?.cartInfo?.inCart?'#3FA0DE':'#0289DE'}}
             >
-              {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+              {/* {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'} */}
+              {product.stock < 1 ? 'Out of Stock' : product?.cartInfo?.inCart ?'Added To Cart':'Add To Cart'}
             </button>
             
             <button 

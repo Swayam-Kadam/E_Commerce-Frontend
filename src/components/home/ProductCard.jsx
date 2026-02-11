@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addToCart, getCartCount } from '../AddToCart/slice/CartSlice';
+import { addCart, addToCart, getCartCount } from '../AddToCart/slice/CartSlice';
 import { addToWishlist, getWhishlistCount, removeFromWishlist, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -69,8 +69,7 @@ const ProductCard = ({ product }) => {
   
   console.log("Cart payload:", payload);
   
-  dispatch(addToCart(payload))
-    .then((res) => {
+  dispatch(addCart(payload)).then((res) => {
       if (res?.payload?.status === 200 || res?.payload?.status === 201) {
         dispatch(getCartCount());
         toast.success("Product added to cart successfully!");
@@ -285,10 +284,10 @@ const ProductCard = ({ product }) => {
             <button 
               className=" text-white px-3 py-1.5 rounded-sm text-sm font-medium  transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
               onClick={()=>handleAddToCart(product)}
-              disabled={product.stock < 1}
-              style={{backgroundColor:'#0289DE'}}
+              disabled={product.stock < 1 || product?.cartInfo?.inCart}
+              style={{backgroundColor:product.stock < 1 || product?.cartInfo?.inCart?'#3FA0DE':'#0289DE'}}
             >
-              {product.stock > 1 ? 'Add to Cart' : 'Out of Stock'}
+              {product.stock < 1 ? 'Out of Stock' : product?.cartInfo?.inCart ?'Added To Cart':'Add To Cart'}
             </button>
           </div>
         </div>

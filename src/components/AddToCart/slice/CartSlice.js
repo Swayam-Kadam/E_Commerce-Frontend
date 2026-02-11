@@ -60,7 +60,7 @@ export const addCart = createAsyncThunk(
   `cart/addCart`,
   async (payload, thunkAPI) => { 
     try {
-      const response = await axiosReact.get(CART_ADD,payload); 
+      const response = await axiosReact.post(CART_ADD,payload); 
       return response; 
     } catch (err) {
       toast.error(err?.response?.data?.error || somethingWentWrong);
