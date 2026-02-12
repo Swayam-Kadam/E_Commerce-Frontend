@@ -56,8 +56,6 @@ export const clearWhishlist = createAsyncThunk(
   }
 );
 
-WHISHLIST_CLEAR
-
 const initialState = {
   items: [],
   totalWishlistQuantity: 0,

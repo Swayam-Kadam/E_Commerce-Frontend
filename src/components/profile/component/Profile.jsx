@@ -240,6 +240,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import PageLoader from '@/components/common/PageLoader';
 
 // Yup validation schema
 const profileSchema = Yup.object().shape({
@@ -1373,6 +1374,7 @@ const Profile = () => {
       transition={{ duration: 0.5 }}
       className="bg-white rounded-lg shadow-md p-6"
     >
+      {userProfileLoading && <PageLoader/>}
       {!isEditing ? (
         <div className="flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-6">
           <ViewProfile

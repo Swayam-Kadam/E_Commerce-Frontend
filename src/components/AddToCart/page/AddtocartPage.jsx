@@ -7,14 +7,14 @@ import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa";
 import { FaMinusCircle,FaPlusCircle } from "react-icons/fa";
 import { toast } from 'react-toastify';
+import PageLoader from '@/components/common/PageLoader';
 
 const AddtocartPage = () => {
   const dispatch = useDispatch();
-  const { cartItems, totalQuantity, totalAmount } = useSelector((state) => ({
+  const { cartItems, totalQuantity,cartItemLoading } = useSelector((state) => ({
     cartItems: state?.cart?.cartItems,  // Changed from whishlist to wishlist
+    cartItemLoading: state?.cart?.cartItemLoading,
     totalQuantity: state?.cart?.totalQuantity,
-    allWhishlistData: state?.cart?.allWhishlistData,
-    allWhishlistLoading: state?.cart?.allWhishlistLoading,
   }));
 
   const productItem = cartItems?.items
@@ -61,6 +61,7 @@ const AddtocartPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+    {cartItemLoading && <PageLoader/>}
       <motion.h1 
         className="text-3xl font-bold text-gray-800 mb-8"
         initial={{ opacity: 0, y: -20 }}

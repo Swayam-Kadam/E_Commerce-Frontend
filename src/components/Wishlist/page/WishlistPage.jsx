@@ -177,9 +177,11 @@ const WishlistPage = () => {
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                         onClick={() => item.inStock && moveToCart(item)}
-                        disabled={!item.inStock}
+                        // disabled={!item.inStock}
+                        disabled={item.stock < 1 || item?.cartInfo?.inCart}
+                        style={{backgroundColor:item.stock < 1 || item?.cartInfo?.inCart?'#3FA0DE':'#0289DE'}}
                       >
-                        {item.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+                        {item.stock < 1 ? 'Out of Stock' : item?.cartInfo?.inCart ?'Added To Cart':'Add To Cart'}
                       </motion.button>
                       
                       <Link 
