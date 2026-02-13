@@ -16,3 +16,5 @@ export const REMOVE_CART = '/cart/remove/';
 export const CLEAR_CART = '/cart/clear';
 export const CART_COUNT = '/cart/count'
 export const CART_ADD = '/cart/add';
+export const CREATE_ORDER = '/payment/api/create-order';
+export const VERIFY_PAYMENT = '/payment/api/verify-payment';

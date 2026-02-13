@@ -1,6 +1,6 @@
 import { somethingWentWrong } from '@/constants/SchemaValidation';
 import { axiosReact } from '@/services/api';
-import { CART_ADD, CART_COUNT, CLEAR_CART, FETCH_ALL_CART, REMOVE_CART } from '@/services/url';
+import { CART_ADD, CART_COUNT, CLEAR_CART, CREATE_ORDER, FETCH_ALL_CART, REMOVE_CART, VERIFY_PAYMENT } from '@/services/url';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 
@@ -69,6 +69,33 @@ export const addCart = createAsyncThunk(
   }
 );
 
+// Create Order
+export const createOrder = createAsyncThunk(
+  `cart/createOrder`,
+  async (payload, thunkAPI) => {
+    try {
+      const response = await axiosReact.post(CREATE_ORDER, payload);
+      return response;
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+// Verify Payment
+export const verifyPayment = createAsyncThunk(
+  `cart/verifyPayment`,
+  async (payload, thunkAPI) => {
+    try {
+      const response = await axiosReact.post(VERIFY_PAYMENT, payload);
+      return response;
+    } catch (err) {
+      toast.error(err?.response?.data?.error || somethingWentWrong);
+      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
 
 const initialState = {
   items: [],
@@ -78,6 +105,10 @@ const initialState = {
   cartItemLoading:false,
   cartCount:0,
   cartCountLoading:false,
+  orderData: null,
+  paymentLoading: false,
+  verificationLoading: false,
+  paymentSuccess: false,
 };
 
 const cartSlice = createSlice({
@@ -151,6 +182,10 @@ const cartSlice = createSlice({
       state.totalQuantity = 0;
       state.totalAmount = 0;
     },
+    resetPaymentState: (state) => {
+      state.orderData = null;
+      state.paymentSuccess = false;
+    },
   },
   extraReducers: (builder) => {
         // Get all products
@@ -184,6 +219,38 @@ const cartSlice = createSlice({
                 state.cartCount = 0
                 state.cartCountLoading = false;
               });
+
+              // Create Order
+              builder.addCase(createOrder.pending, (state) => {
+                state.paymentLoading = true;
+                state.orderData = null;
+              });
+              
+              builder.addCase(createOrder.fulfilled, (state, action) => {
+                state.orderData = action.payload?.data;
+                state.paymentLoading = false;
+              });
+              
+              builder.addCase(createOrder.rejected, (state) => {
+                state.paymentLoading = false;
+                state.orderData = null;
+              });
+
+              // Verify Payment
+              builder.addCase(verifyPayment.pending, (state) => {
+                state.verificationLoading = true;
+                state.paymentSuccess = false;
+              });
+              
+              builder.addCase(verifyPayment.fulfilled, (state, action) => {
+                state.verificationLoading = false;
+                state.paymentSuccess = action.payload?.data?.success || false;
+              });
+              
+              builder.addCase(verifyPayment.rejected, (state) => {
+                state.verificationLoading = false;
+                state.paymentSuccess = false;
+              });
       },
 });
 
@@ -193,6 +260,7 @@ export const {
   removeItemCompletely,
   updateItemQuantity,
   clearCart,
+  resetPaymentState 
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

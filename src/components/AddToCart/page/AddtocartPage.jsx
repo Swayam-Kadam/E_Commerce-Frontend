@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { removeFromCart, removeItemCompletely, updateItemQuantity, clearCart, getCart, removeCart, cleaAllCart, getCartCount } from '../slice/CartSlice';
+import { removeFromCart, removeItemCompletely, updateItemQuantity, clearCart, getCart, removeCart, cleaAllCart, getCartCount,createOrder, resetPaymentState, verifyPayment,  } from '../slice/CartSlice';
 import { useDispatch,useSelector } from 'react-redux';
 import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa";
@@ -11,10 +11,12 @@ import PageLoader from '@/components/common/PageLoader';
 
 const AddtocartPage = () => {
   const dispatch = useDispatch();
-  const { cartItems, totalQuantity,cartItemLoading } = useSelector((state) => ({
+  const { cartItems, totalQuantity,cartItemLoading,orderData, paymentLoading } = useSelector((state) => ({
     cartItems: state?.cart?.cartItems,  // Changed from whishlist to wishlist
     cartItemLoading: state?.cart?.cartItemLoading,
     totalQuantity: state?.cart?.totalQuantity,
+    orderData: state?.cart?.orderData,
+    paymentLoading: state?.cart?.paymentLoading,
   }));
 
   const productItem = cartItems?.items
@@ -25,6 +27,265 @@ const AddtocartPage = () => {
     if (newQuantity < 1) return;
     dispatch(updateItemQuantity({ id, quantity: newQuantity }));
   };
+
+// Add this state
+const [checkoutLoading, setCheckoutLoading] = useState(false);
+const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+// Load Razorpay script
+const loadRazorpayScript = async () => {
+  debugger
+  if (window.Razorpay) {
+    setRazorpayLoaded(true);
+    return true;
+  }
+  
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => {
+      setRazorpayLoaded(true);
+      resolve(true);
+    };
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+// Handle Razorpay payment
+const handleRazorpayPayment = async () => {
+  if (!cartItems?.items?.length) {
+    toast.error('Your cart is empty');
+    return;
+  }
+
+  setCheckoutLoading(true);
+
+  try {
+    // 1. Load Razorpay script
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      toast.error('Failed to load payment gateway. Please try again.');
+      setCheckoutLoading(false);
+      return;
+    }
+
+    const amountInPaise = Math.round(total * 100); // 👈 KEY FIX: Round to integer
+
+    console.log('Sending amount:', amountInPaise);
+
+    // 2. Create order using your Redux thunk
+     await dispatch(createOrder({
+      amount: amountInPaise // Your calculated total from the component
+    })).then((res)=>{
+      console.log(res?.payload?.data)
+      if (res?.payload?.data?.success) {
+      const orderData = res.payload.data;
+      
+      // 3. Razorpay options
+      const options = {
+        key: 'rzp_test_SFQzAIIgMN9PiJ', // Replace with your test key
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Your College Project Name',
+        description: `Payment for ${cartItems?.items?.length} items`,
+        order_id: orderData.orderId,
+        handler: async (response) => {
+          try {
+            // 4. Verify payment using your Redux thunk
+            await dispatch(verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            })).then((res)=>{
+              console.log(res)
+              if (res?.payload?.data?.success) {
+              toast.success('Payment successful! Thank you for your purchase.');
+              
+              // 5. Clear cart after successful payment
+               dispatch(cleaAllCart());
+               dispatch(getCart());
+               dispatch(getCartCount());
+              dispatch(resetPaymentState());
+              
+              // Optional: Navigate to success page
+              // navigate('/order-success');
+            } else {
+              toast.error('Payment verification failed');
+            }
+            });
+          } catch (error) {
+            console.error('Verification error:', error);
+            toast.error('Payment verification failed');
+          }
+          setCheckoutLoading(false);
+        },
+        prefill: {
+          name: 'Test User', // Get from your auth state
+          email: 'test@example.com', // Get from your auth state
+          contact: '9999999999', // Get from your auth state
+        },
+        theme: {
+          color: '#0289de', // Your theme color
+        },
+        modal: {
+          ondismiss: () => {
+            setCheckoutLoading(false);
+            toast.info('Payment cancelled');
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      
+      razorpay.on('payment.failed', (response) => {
+        toast.error(`Payment failed: ${response.error.description}`);
+        setCheckoutLoading(false);
+      });
+
+    } else {
+      throw new Error('Failed to create order');
+    }
+    });
+  } catch (error) {
+    console.error('Payment initiation failed:', error);
+    toast.error('Failed to initiate payment. Please try again.');
+    setCheckoutLoading(false);
+  }
+};
+
+// Handle Razorpay payment
+// const handleRazorpayPayment = async () => {
+//   if (!cartItems?.items?.length) {
+//     toast.error('Your cart is empty');
+//     return;
+//   }
+
+//   setCheckoutLoading(true);
+
+//   try {
+//     // 1. Load Razorpay script
+//     const scriptLoaded = await loadRazorpayScript();
+//     if (!scriptLoaded) {
+//       toast.error('Failed to load payment gateway. Please try again.');
+//       setCheckoutLoading(false);
+//       return;
+//     }
+
+//     const amountInPaise = Math.round(total * 100);
+//     console.log('Sending amount:', amountInPaise);
+
+//     // 2. Create order using your Redux thunk
+//     const res = await dispatch(createOrder({
+//       amount: amountInPaise
+//     }));
+    
+//     console.log('Order creation response:', res?.payload?.data);
+    
+//     // ✅ FIX: Check the actual response structure
+//     if (res?.payload?.data) {
+//       const responseData = res.payload.data;
+      
+//       // Handle different possible response structures
+//       const orderId = responseData?.orderId || 
+//                      responseData?.data?.orderId || 
+//                      responseData?.id;
+      
+//       const amount = responseData?.amount || 
+//                     responseData?.data?.amount || 
+//                     amountInPaise;
+      
+//       const currency = responseData?.currency || 
+//                       responseData?.data?.currency || 
+//                       'INR';
+
+//       if (!orderId) {
+//         console.error('No order ID in response:', responseData);
+//         throw new Error('Invalid order response - missing order ID');
+//       }
+
+//       console.log('Using order ID:', orderId);
+      
+//       // 3. Razorpay options - FIXED STRUCTURE
+//       const options = {
+//         key: 'rzp_test_SFQzAIIgMN9PiJ',
+//         amount: amount,
+//         currency: currency,
+//         name: 'Your College Project Name',
+//         description: `Payment for ${cartItems?.items?.length} items`,
+//         order_id: orderId,
+//         handler: async (response) => {
+//           console.log('Payment response:', response);
+//           try {
+//             // 4. Verify payment
+//             const verifyRes = await dispatch(verifyPayment({
+//               razorpay_order_id: response.razorpay_order_id,
+//               razorpay_payment_id: response.razorpay_payment_id,
+//               razorpay_signature: response.razorpay_signature,
+//             }));
+            
+//             console.log('Verification response:', verifyRes);
+            
+//             if (verifyRes?.payload?.data?.success) {
+//               toast.success('Payment successful! Thank you for your purchase.');
+              
+//               // 5. Clear cart
+//               await dispatch(cleaAllCart());
+//               await dispatch(getCart());
+//               await dispatch(getCartCount());
+//               dispatch(resetPaymentState());
+              
+//             } else {
+//               toast.error('Payment verification failed');
+//             }
+//           } catch (error) {
+//             console.error('Verification error:', error);
+//             toast.error('Payment verification failed');
+//           }
+//           setCheckoutLoading(false);
+//         },
+//         prefill: {
+//           name: 'Test User',
+//           email: 'test@example.com',
+//           contact: '9999999999',
+//         },
+//         notes: {
+//           address: 'Razorpay Corporate Office'
+//         },
+//         theme: {
+//           color: '#0289de',
+//         },
+//         modal: {
+//           ondismiss: () => {
+//             setCheckoutLoading(false);
+//             toast.info('Payment cancelled');
+//           },
+//         },
+//       };
+
+//       // Initialize and open Razorpay
+//       const razorpay = new window.Razorpay(options);
+//       razorpay.open();
+      
+//       razorpay.on('payment.failed', (response) => {
+//         console.error('Payment failed:', response.error);
+//         toast.error(`Payment failed: ${response.error.description}`);
+//         setCheckoutLoading(false);
+//       });
+
+//     } else {
+//       console.error('Order creation failed - invalid response:', res);
+//       toast.error(res?.payload?.message || 'Failed to create order');
+//       setCheckoutLoading(false);
+//     }
+//   } catch (error) {
+//     console.error('Payment initiation failed:', error);
+//     toast.error('Failed to initiate payment. Please try again.');
+//     setCheckoutLoading(false);
+//   }
+// };
+
 
   const removeItem = (id) => {
     console.log(id)
@@ -194,12 +455,22 @@ const AddtocartPage = () => {
               </div>
             </div>
             
-            <motion.button
+            {/* <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               Proceed to Checkout
+            </motion.button> */}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleRazorpayPayment}
+              disabled={checkoutLoading || paymentLoading || cartItemLoading}
+            >
+              {checkoutLoading || paymentLoading ? 'Processing...' : 'Proceed to Checkout'}
             </motion.button>
             
             <Link 
