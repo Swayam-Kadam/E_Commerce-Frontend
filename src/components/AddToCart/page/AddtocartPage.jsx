@@ -8,6 +8,7 @@ import { FaMinus } from "react-icons/fa";
 import { FaMinusCircle,FaPlusCircle } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import PageLoader from '@/components/common/PageLoader';
+import conf from '@/conf/conf';
 
 const AddtocartPage = () => {
   const dispatch = useDispatch();
@@ -84,7 +85,7 @@ const handleRazorpayPayment = async () => {
       
       // 3. Razorpay options
       const options = {
-        key: 'rzp_test_SFQzAIIgMN9PiJ', // Replace with your test key
+        key: conf?.rozerpaykey, // Replace with your test key
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Your College Project Name',
@@ -155,136 +156,6 @@ const handleRazorpayPayment = async () => {
   }
 };
 
-// Handle Razorpay payment
-// const handleRazorpayPayment = async () => {
-//   if (!cartItems?.items?.length) {
-//     toast.error('Your cart is empty');
-//     return;
-//   }
-
-//   setCheckoutLoading(true);
-
-//   try {
-//     // 1. Load Razorpay script
-//     const scriptLoaded = await loadRazorpayScript();
-//     if (!scriptLoaded) {
-//       toast.error('Failed to load payment gateway. Please try again.');
-//       setCheckoutLoading(false);
-//       return;
-//     }
-
-//     const amountInPaise = Math.round(total * 100);
-//     console.log('Sending amount:', amountInPaise);
-
-//     // 2. Create order using your Redux thunk
-//     const res = await dispatch(createOrder({
-//       amount: amountInPaise
-//     }));
-    
-//     console.log('Order creation response:', res?.payload?.data);
-    
-//     // ✅ FIX: Check the actual response structure
-//     if (res?.payload?.data) {
-//       const responseData = res.payload.data;
-      
-//       // Handle different possible response structures
-//       const orderId = responseData?.orderId || 
-//                      responseData?.data?.orderId || 
-//                      responseData?.id;
-      
-//       const amount = responseData?.amount || 
-//                     responseData?.data?.amount || 
-//                     amountInPaise;
-      
-//       const currency = responseData?.currency || 
-//                       responseData?.data?.currency || 
-//                       'INR';
-
-//       if (!orderId) {
-//         console.error('No order ID in response:', responseData);
-//         throw new Error('Invalid order response - missing order ID');
-//       }
-
-//       console.log('Using order ID:', orderId);
-      
-//       // 3. Razorpay options - FIXED STRUCTURE
-//       const options = {
-//         key: 'rzp_test_SFQzAIIgMN9PiJ',
-//         amount: amount,
-//         currency: currency,
-//         name: 'Your College Project Name',
-//         description: `Payment for ${cartItems?.items?.length} items`,
-//         order_id: orderId,
-//         handler: async (response) => {
-//           console.log('Payment response:', response);
-//           try {
-//             // 4. Verify payment
-//             const verifyRes = await dispatch(verifyPayment({
-//               razorpay_order_id: response.razorpay_order_id,
-//               razorpay_payment_id: response.razorpay_payment_id,
-//               razorpay_signature: response.razorpay_signature,
-//             }));
-            
-//             console.log('Verification response:', verifyRes);
-            
-//             if (verifyRes?.payload?.data?.success) {
-//               toast.success('Payment successful! Thank you for your purchase.');
-              
-//               // 5. Clear cart
-//               await dispatch(cleaAllCart());
-//               await dispatch(getCart());
-//               await dispatch(getCartCount());
-//               dispatch(resetPaymentState());
-              
-//             } else {
-//               toast.error('Payment verification failed');
-//             }
-//           } catch (error) {
-//             console.error('Verification error:', error);
-//             toast.error('Payment verification failed');
-//           }
-//           setCheckoutLoading(false);
-//         },
-//         prefill: {
-//           name: 'Test User',
-//           email: 'test@example.com',
-//           contact: '9999999999',
-//         },
-//         notes: {
-//           address: 'Razorpay Corporate Office'
-//         },
-//         theme: {
-//           color: '#0289de',
-//         },
-//         modal: {
-//           ondismiss: () => {
-//             setCheckoutLoading(false);
-//             toast.info('Payment cancelled');
-//           },
-//         },
-//       };
-
-//       // Initialize and open Razorpay
-//       const razorpay = new window.Razorpay(options);
-//       razorpay.open();
-      
-//       razorpay.on('payment.failed', (response) => {
-//         console.error('Payment failed:', response.error);
-//         toast.error(`Payment failed: ${response.error.description}`);
-//         setCheckoutLoading(false);
-//       });
-
-//     } else {
-//       console.error('Order creation failed - invalid response:', res);
-//       toast.error(res?.payload?.message || 'Failed to create order');
-//       setCheckoutLoading(false);
-//     }
-//   } catch (error) {
-//     console.error('Payment initiation failed:', error);
-//     toast.error('Failed to initiate payment. Please try again.');
-//     setCheckoutLoading(false);
-//   }
-// };
 
 
   const removeItem = (id) => {

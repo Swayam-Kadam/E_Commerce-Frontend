@@ -5,5 +5,6 @@ const conf = {
   cookieDomain: String(import.meta.env.VITE_REACT_APP_COOKIE_DOMAIN),
   cookieExpires: String(import.meta.env.VITE_REACT_APP_COOKIE_EXPIRES),
   redirectUrl: String(import.meta.env.VITE_REACT_APP_REDIRECT_URL),
+  rozerpaykey: String(import.meta.env.VITE_REACT_APP_RAZORPAY_KEY),
 };
 export default conf;
