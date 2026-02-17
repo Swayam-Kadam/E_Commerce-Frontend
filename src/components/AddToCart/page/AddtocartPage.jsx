@@ -104,10 +104,19 @@ const handleRazorpayPayment = async () => {
               toast.success('Payment successful! Thank you for your purchase.');
               
               // 5. Clear cart after successful payment
-               dispatch(cleaAllCart());
-               dispatch(getCart());
-               dispatch(getCartCount());
-              dispatch(resetPaymentState());
+               
+               dispatch(cleaAllCart()).then((res)=>{
+                console.log(res)
+                if(res?.payload?.status === 200 || res?.payload?.status === 201 ){
+                  dispatch(getCart()).then((res)=>{
+                    if(res?.payload?.status === 200 || res?.payload?.status === 201 ){
+                      dispatch(getCartCount());
+                    dispatch(resetPaymentState());
+                    }
+                  })
+                }
+               })
+               
               
               // Optional: Navigate to success page
               // navigate('/order-success');

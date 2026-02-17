@@ -11,10 +11,13 @@ import { getLogin } from './slice/loginSlice';
 import { toast}  from 'react-toastify';
 import routesConstants from '@/routes/routesConstants';
 import PageLoader from '../common/PageLoader';
+import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 
 const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
    const [authError, setAuthError] = useState('');
+   const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -24,14 +27,14 @@ const LoginPage = () => {
   const formik = useFormik({
     initialValues: {
       email: '',
-      password: '',
+      passwords: '',
       rememberMe: false,
     },
     validationSchema: Yup.object({
       email: Yup.string()
         .email('Invalid email address')
         .required('Email is required'),
-      password: Yup.string()
+      passwords: Yup.string()
         .min(6, 'Password must be at least 6 characters')
         .required('Password is required'),
     }),
@@ -43,7 +46,7 @@ const LoginPage = () => {
 
         let payload={
           email:values.email,
-          password:values.password
+          password:values.passwords
         }
         dispatch(getLogin(payload)).then((res)=>{
           if(res.payload.tokens.accessToken){
@@ -196,34 +199,84 @@ const LoginPage = () => {
               </motion.div>
 
               {/* Password Field */}
-              <motion.div variants={itemVariants}>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              {/* <motion.div variants={itemVariants}>
+                <label htmlFor="passwords" className="block text-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
                 <input
-                  id="password"
-                  name="password"
-                  type="password"
+                  id="passwords"
+                  name="passwords"
+                  type="passwords"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  value={formik.values.password}
+                  value={formik.values.passwords}
                   className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:outline-none transition-colors ${
-                    formik.touched.password && formik.errors.password
+                    formik.touched.passwords && formik.errors.passwords
                       ? 'border-red-500 focus:ring-red-200'
                       : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
                   }`}
-                  placeholder="Enter your password"
+                  placeholder="Enter your passwords"
                 />
-                {formik.touched.password && formik.errors.password && (
+                {formik.touched.passwords && formik.errors.passwords && (
                   <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-red-500 text-sm mt-1"
                   >
-                    {formik.errors.password}
+                    {formik.errors.passwords}
                   </motion.p>
                 )}
-              </motion.div>
+              </motion.div> */}
+
+              {/* Password Field */}
+<motion.div variants={itemVariants}>
+  <label htmlFor="passwords" className="block text-sm font-medium text-gray-700 mb-2">
+    Password
+  </label>
+
+  <div className="relative">
+    <input
+      id="passwords"
+      name="passwords"z
+      type={showPassword ? "text" : "password"}
+      onChange={formik.handleChange}
+      onBlur={formik.handleBlur}
+      value={formik.values.passwords}
+      className={`w-full px-4 py-3 pr-12 rounded-lg border focus:ring-2 focus:outline-none transition-colors ${
+        formik.touched.passwords && formik.errors.passwords
+          ? 'border-red-500 focus:ring-red-200'
+          : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
+      }`}
+      placeholder="Enter your passwords"
+    />
+
+    {/* Eye Icon Button */}
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700"
+    >
+      {showPassword ? (
+        // Eye Off Icon
+        <IoEyeOffOutline size="20"/>
+      ) : (
+        // Eye Icon
+        <IoEyeOutline  size="20"/>
+      )}
+    </button>
+  </div>
+
+  {formik.touched.passwords && formik.errors.passwords && (
+    <motion.p
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-red-500 text-sm mt-1"
+    >
+      {formik.errors.passwords}
+    </motion.p>
+  )}
+</motion.div>
+
 
               {/* Remember Me & Forgot Password */}
               <motion.div variants={itemVariants} className="flex items-center justify-between">

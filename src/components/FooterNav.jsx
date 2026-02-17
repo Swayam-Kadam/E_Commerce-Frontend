@@ -10,7 +10,9 @@ import { useSelector } from 'react-redux'; // Import useSelector
 
 const FooterNav = () => {
   const location = useLocation();
-  const {  totalWishlistQuantity } = useSelector(state => state.wishlist); // Get the count from Redux state
+   const { whishlistCount } = useSelector(state => ({
+    whishlistCount: state?.wishlist?.whishlistCount?.data?.count,
+    }));
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -68,7 +70,7 @@ const FooterNav = () => {
               {/* Conditionally render the count span for Wishlist */}
                 {item.icon === HiHeart &&
                 <span className="absolute -top-[-5px] -right-[-20px] bg-[#0289de] text-white text-xs rounded-full h-4 w-4 flex items-center justify-center transform translate-x-1/2 -translate-y-1/2">
-                  {totalWishlistQuantity}
+                  {whishlistCount}
                 </span>
                 }
              
