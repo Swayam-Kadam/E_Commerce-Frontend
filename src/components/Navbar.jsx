@@ -145,8 +145,8 @@ const Navbar = () => {
     profile: {
       title: "profile",
       items: [
-        { images:'/images/png/favourite.png',name: "Wishlist", link: "/wishlist" },
         { images:'/images/png/profile.png',name: "Profile", link: "/account" },
+        { images:'/images/png/favourite.png',name: "Wishlist", link: "/wishlist" },
         { images:'/images/png/check-out.png',name: "Logout", link: "/" },
       ]
     }

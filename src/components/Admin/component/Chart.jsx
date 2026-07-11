@@ -1,99 +1,126 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import CommonChart from '../common/CommonChart';
 
 const Chart = () => {
+  const { charts } = useSelector((state) => state.admin.dashboard);
   const [timePeriod, setTimePeriod] = useState('monthly');
-  const [chartType, setChartType] = useState('monthly'); // For second chart
-   const [lineChartType, setLineChartType] = useState('monthly'); // For line chart
+  const [chartType, setChartType] = useState('monthly');
+  const [lineChartType, setLineChartType] = useState('monthly');
 
+  const monthly = charts?.monthly || { labels: [], sales: [], revenue: [], profit: [] };
+  const quarterly = charts?.quarterly || { labels: [], sales: [], revenue: [], profit: [] };
 
-  // Bar Chart Data
+  const getPeriod = (type) => (type === 'monthly' ? monthly : quarterly);
+
+  const salesPeriod = getPeriod(timePeriod);
+  const piePeriod = getPeriod(chartType);
+  const linePeriod = getPeriod(lineChartType);
+
   const barChartOptions = {
     chart: {
       type: 'bar',
       height: 350,
       toolbar: {
-        show: true
-      }
+        show: true,
+      },
     },
     xaxis: {
-      categories: timePeriod === 'monthly' 
-        ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] 
-        : ['Q1', 'Q2', 'Q3', 'Q4']
+      categories: salesPeriod.labels?.length
+        ? salesPeriod.labels
+        : timePeriod === 'monthly'
+          ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+          : ['Q1', 'Q2', 'Q3', 'Q4'],
     },
     yaxis: {
       title: {
-        text: "Count",
+        text: 'Orders',
       },
     },
     stroke: {
-      curve: 'smooth'
+      curve: 'smooth',
     },
-    colors: ['#008FFB']
+    colors: ['#008FFB'],
   };
 
-  const barChartSeries = [{
-    name: 'Sales',
-    data: timePeriod === 'monthly' 
-      ? [30, 40, 35, 50, 49, 60, 45, 65, 20, 33, 55, 25] 
-      : [120, 150, 180, 200]
-  }];
+  const barChartSeries = [
+    {
+      name: 'Orders',
+      data: salesPeriod.sales?.length
+        ? salesPeriod.sales
+        : timePeriod === 'monthly'
+          ? Array(12).fill(0)
+          : Array(4).fill(0),
+    },
+  ];
 
-  // Pie Chart Data
   const pieChartOptions = {
     chart: {
       type: 'pie',
       height: 350,
       toolbar: {
-        show: true
-      }
+        show: true,
+      },
     },
-    labels: chartType === 'monthly' 
-      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      : ['Q1', 'Q2', 'Q3', 'Q4'],
+    labels: piePeriod.labels?.length
+      ? piePeriod.labels
+      : chartType === 'monthly'
+        ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        : ['Q1', 'Q2', 'Q3', 'Q4'],
     colors: [
-      '#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0',
-      '#546E7A', '#26a69a', '#D10CE8', '#FF9F43', '#4ECDC4',
-      '#00A8FF', '#9C27B0'
+      '#008FFB',
+      '#00E396',
+      '#FEB019',
+      '#FF4560',
+      '#775DD0',
+      '#546E7A',
+      '#26a69a',
+      '#D10CE8',
+      '#FF9F43',
+      '#4ECDC4',
+      '#00A8FF',
+      '#9C27B0',
     ],
     legend: {
-      position: 'bottom'
+      position: 'bottom',
     },
     dataLabels: {
       enabled: true,
       formatter: function (val) {
-        return val.toFixed(1) + "%";
-      }
-    }
+        return val.toFixed(1) + '%';
+      },
+    },
   };
 
-  const pieChartSeries = chartType === 'monthly' 
-    ? [30, 40, 35, 50, 49, 60, 45, 65, 20, 33, 55, 25]
-    : [120, 150, 180, 200];
+  const pieChartSeries = piePeriod.sales?.length
+    ? piePeriod.sales
+    : chartType === 'monthly'
+      ? Array(12).fill(0)
+      : Array(4).fill(0);
 
-
-    // Line Chart Data
   const lineChartOptions = {
     chart: {
       type: 'line',
       height: 350,
       toolbar: {
-        show: true
-      }
+        show: true,
+      },
     },
     xaxis: {
-      categories: lineChartType === 'monthly' 
-        ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] 
-        : ['Q1', 'Q2', 'Q3', 'Q4']
+      categories: linePeriod.labels?.length
+        ? linePeriod.labels
+        : lineChartType === 'monthly'
+          ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+          : ['Q1', 'Q2', 'Q3', 'Q4'],
     },
     yaxis: {
       title: {
-        text: "Revenue ($)",
+        text: 'Revenue ($)',
       },
     },
     stroke: {
       curve: 'smooth',
-      width: 3
+      width: 3,
     },
     markers: {
       size: 5,
@@ -103,32 +130,29 @@ const Chart = () => {
       borderColor: '#e7e7e7',
       row: {
         colors: ['#f3f3f3', 'transparent'],
-        opacity: 0.5
+        opacity: 0.5,
       },
-    }
+    },
   };
 
-  const lineChartSeries = lineChartType === 'monthly' 
-    ? [
-        {
-          name: 'Revenue',
-          data: [4500, 5200, 4800, 6100, 5800, 7200, 6800, 7900, 7500, 8200, 7800, 9000]
-        },
-        {
-          name: 'Profit',
-          data: [2200, 2800, 2500, 3200, 3000, 3800, 3500, 4200, 4000, 4500, 4200, 4800]
-        }
-      ]
-    : [
-        {
-          name: 'Revenue',
-          data: [14500, 16800, 23200, 25000]
-        },
-        {
-          name: 'Profit',
-          data: [7500, 10300, 11700, 13500]
-        }
-      ];
+  const lineChartSeries = [
+    {
+      name: 'Revenue',
+      data: linePeriod.revenue?.length
+        ? linePeriod.revenue
+        : lineChartType === 'monthly'
+          ? Array(12).fill(0)
+          : Array(4).fill(0),
+    },
+    {
+      name: 'Profit',
+      data: linePeriod.profit?.length
+        ? linePeriod.profit
+        : lineChartType === 'monthly'
+          ? Array(12).fill(0)
+          : Array(4).fill(0),
+    },
+  ];
 
   const handleTimePeriodClick = (index) => {
     const periods = ['monthly', 'quarterly'];
@@ -140,14 +164,13 @@ const Chart = () => {
     setChartType(types[index]);
   };
 
-   const handleLineChartTypeClick = (index) => {
+  const handleLineChartTypeClick = (index) => {
     const types = ['monthly', 'quarterly'];
     setLineChartType(types[index]);
   };
 
   return (
-    <div className='p-5'>
-      {/* First Chart - Bar Chart */}
+    <div className="p-5">
       <CommonChart
         title="Sales Performance - Bar Chart"
         options={barChartOptions}
@@ -157,26 +180,24 @@ const Chart = () => {
         className="mt-5"
       />
 
-    <div className='block lg:flex justify-between gap-5'>
-      {/* Second Chart - Pie Chart */}
-       {/* Line Chart */}
-      <CommonChart
-        title="Revenue & Profit Trend - Line Chart"
-        options={lineChartOptions}
-        series={lineChartSeries}
-        subCategory={['Monthly', 'Quarterly']}
-        onSubCategoryClick={handleLineChartTypeClick}
-        className="mt-8 w-full"
-      />
+      <div className="block justify-between gap-5 lg:flex">
+        <CommonChart
+          title="Revenue & Profit Trend - Line Chart"
+          options={lineChartOptions}
+          series={lineChartSeries}
+          subCategory={['Monthly', 'Quarterly']}
+          onSubCategoryClick={handleLineChartTypeClick}
+          className="mt-8 w-full"
+        />
 
-      <CommonChart
-        title="Sales Distribution - Pie Chart"
-        options={pieChartOptions}
-        series={pieChartSeries}
-        subCategory={['Monthly', 'Quarterly']}
-        onSubCategoryClick={handleChartTypeClick}
-        className="mt-5 w-full"
-      />
+        <CommonChart
+          title="Sales Distribution - Pie Chart"
+          options={pieChartOptions}
+          series={pieChartSeries}
+          subCategory={['Monthly', 'Quarterly']}
+          onSubCategoryClick={handleChartTypeClick}
+          className="mt-5 w-full"
+        />
       </div>
     </div>
   );

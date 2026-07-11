@@ -1,16 +1,19 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
+import { FiSliders } from 'react-icons/fi';
 
 const FilterComponent = ({ filters, onFilterChange }) => {
   const handlePriceRangeChange = (index, value) => {
     const newRange = [...filters.priceRange];
-    newRange[index] = parseInt(value);
+    newRange[index] = parseInt(value, 10);
     onFilterChange({ ...filters, priceRange: newRange });
   };
 
   const handleRatingChange = (rating) => {
-    onFilterChange({ ...filters, rating: filters.rating === rating ? 0 : rating });
+    onFilterChange({
+      ...filters,
+      rating: filters.rating === rating ? 0 : rating,
+    });
   };
 
   const handleCheckboxChange = (filterType) => {
@@ -18,24 +21,34 @@ const FilterComponent = ({ filters, onFilterChange }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
-      
-      {/* Price Range Filter */}
+    <div className="border border-slate-100 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(2,137,222,0.4)] sm:p-6 md:sticky md:top-8">
+      <div className="mb-5 flex items-center gap-2 border-b border-slate-100 pb-4">
+        <span className="flex h-9 w-9 items-center justify-center bg-[#0289de]/10 text-[#0289de]">
+          <FiSliders className="h-4 w-4" />
+        </span>
+        <div>
+          <h3 className="font-display text-lg font-bold text-slate-900">Filters</h3>
+          <p className="text-xs text-slate-400">Refine your results</p>
+        </div>
+      </div>
+
       <div className="mb-6">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Price Range</h4>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-sm text-gray-600">${filters.priceRange[0]}</span>
-            <span className="text-sm text-gray-600">${filters.priceRange[1]}</span>
-          </div>
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Price Range
+        </h4>
+        <div className="mb-2 flex justify-between text-sm font-medium text-slate-800">
+          <span>${filters.priceRange[0]}</span>
+          <span>${filters.priceRange[1]}</span>
+        </div>
+        <div className="space-y-3">
           <input
             type="range"
             min="0"
             max="10000"
             value={filters.priceRange[0]}
             onChange={(e) => handlePriceRangeChange(0, e.target.value)}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="h-1.5 w-full cursor-pointer appearance-none bg-slate-200 accent-[#0289de]"
+            aria-label="Minimum price"
           />
           <input
             type="range"
@@ -43,30 +56,35 @@ const FilterComponent = ({ filters, onFilterChange }) => {
             max="10000"
             value={filters.priceRange[1]}
             onChange={(e) => handlePriceRangeChange(1, e.target.value)}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="h-1.5 w-full cursor-pointer appearance-none bg-slate-200 accent-[#0289de]"
+            aria-label="Maximum price"
           />
         </div>
       </div>
 
-      {/* Rating Filter */}
       <div className="mb-6">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Minimum Rating</h4>
-        <div className="space-y-2">
-          {[4, 3, 2, 1].map(rating => (
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Minimum Rating
+        </h4>
+        <div className="space-y-1.5">
+          {[4, 3, 2, 1].map((rating) => (
             <button
               key={rating}
-              className={`flex items-center w-full p-2 rounded-md text-sm ${
-                filters.rating === rating 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
+              type="button"
+              className={`flex w-full items-center gap-2 px-3 py-2.5 text-sm transition ${
+                filters.rating === rating
+                  ? 'bg-[#0289de]/10 font-semibold text-[#0289de]'
+                  : 'text-slate-600 hover:bg-slate-50'
               }`}
               onClick={() => handleRatingChange(rating)}
             >
-              <div className="flex mr-2">
-                {[1, 2, 3, 4, 5].map(star => (
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
                   <svg
                     key={star}
-                    className={`h-4 w-4 ${star <= rating ? 'text-amber-400' : 'text-gray-300'}`}
+                    className={`h-3.5 w-3.5 ${
+                      star <= rating ? 'text-amber-400' : 'text-slate-200'
+                    }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -80,42 +98,42 @@ const FilterComponent = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      {/* Checkbox Filters - UPDATED to match your data */}
-      <div className="space-y-3">
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={filters.inStock}
-            onChange={() => handleCheckboxChange('inStock')}
-            className="rounded text-blue-600 focus:ring-blue-500"
-          />
-          <span className="ml-2 text-sm text-gray-700">In Stock Only</span>
-        </label>
-
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={filters.isBestSeller}
-            onChange={() => handleCheckboxChange('isBestSeller')}
-            className="rounded text-blue-600 focus:ring-blue-500"
-          />
-          <span className="ml-2 text-sm text-gray-700">Bestsellers</span>
-        </label>
-        
-        {/* You can add isNew back when you have that property in your data */}
+      <div className="space-y-2 border-t border-slate-100 pt-5">
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Availability
+        </h4>
+        {[
+          { key: 'inStock', label: 'In Stock Only' },
+          { key: 'isBestSeller', label: 'Bestsellers' },
+        ].map(({ key, label }) => (
+          <label
+            key={key}
+            className="flex cursor-pointer items-center justify-between border border-slate-100 px-3 py-2.5 transition hover:border-sky-100"
+          >
+            <span className="text-sm text-slate-700">{label}</span>
+            <input
+              type="checkbox"
+              checked={filters[key]}
+              onChange={() => handleCheckboxChange(key)}
+              className="h-4 w-4 accent-[#0289de]"
+            />
+          </label>
+        ))}
       </div>
 
-      {/* Reset Filters Button */}
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full mt-6 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
-        onClick={() => onFilterChange({
-          priceRange: [0, 10000],
-          rating: 0,
-          inStock: false,
-          isBestSeller: false
-        })}
+        type="button"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        className="mt-6 w-full border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        onClick={() =>
+          onFilterChange({
+            priceRange: [0, 10000],
+            rating: 0,
+            inStock: false,
+            isBestSeller: false,
+          })
+        }
       >
         Reset Filters
       </motion.button>

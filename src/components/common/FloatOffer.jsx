@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const FloatOffer = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [currentOffer, setCurrentOffer] = useState(0);
 
   const offers = [
-    "🔥 50% OFF - Limited Time Offer!",
-    "🎉 Free Shipping on Orders Over $50",
-    "⭐ Special Discount - Use Code: SAVE20",
-    "🚚 Get 25% Off Your First Order"
+    { text: '50% OFF — limited time', code: 'SAVE50' },
+    { text: 'Free shipping over $50', code: null },
+    { text: 'First order perk', code: 'WELCOME25' },
+    { text: 'Member weekend deals', code: null },
   ];
 
   useEffect(() => {
-    // Show the offer after 2 seconds
-    const showTimer = setTimeout(() => {
-      setIsVisible(true);
-    }, 2000);
-
-    // Rotate offers every 5 seconds
+    const showTimer = setTimeout(() => setIsVisible(true), 2200);
     const rotateTimer = setInterval(() => {
       setCurrentOffer((prev) => (prev + 1) % offers.length);
     }, 5000);
@@ -29,55 +25,64 @@ const FloatOffer = () => {
     };
   }, [offers.length]);
 
-  const handleClose = () => {
-    setIsVisible(false);
-  };
-
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 100 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="fixed bottom-6 right-6 z-50"
+          initial={{ opacity: 0, y: 80, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 80, scale: 0.96 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-6 right-4 z-50 sm:right-6"
         >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg shadow-2xl border-2 border-white/20"
-          >
-            {/* Close button */}
+          <div className="relative w-[min(92vw,300px)] overflow-hidden border border-sky-100 bg-white shadow-[0_24px_50px_-20px_rgba(2,137,222,0.55)]">
+            <div className="h-1 w-full bg-[linear-gradient(90deg,#0169ab,#0289de,#38bdf8)]" />
+
             <button
-              onClick={handleClose}
-              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-md"
+              type="button"
+              onClick={() => setIsVisible(false)}
+              className="absolute right-2 top-3 flex h-7 w-7 items-center justify-center text-slate-400 transition hover:text-slate-700"
               aria-label="Close offer"
             >
               ×
             </button>
-            
-            {/* Offer text */}
-            <motion.div
-              key={currentOffer}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center space-x-2"
-            >
-              <span className="text-sm font-semibold whitespace-nowrap">
-                {offers[currentOffer]}
-              </span>
-            </motion.div>
 
-            {/* Floating animation */}
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -top-1 -right-1 w-2 h-2 bg-red-400 rounded-full"
-            />
-          </motion.div>
+            <div className="px-4 pb-4 pt-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0289de]">
+                SwiftCart deal
+              </p>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentOffer}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25 }}
+                  className="mt-2"
+                >
+                  <p className="font-display text-base font-bold text-slate-900">
+                    {offers[currentOffer].text}
+                  </p>
+                  {offers[currentOffer].code && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Code{' '}
+                      <span className="font-semibold text-[#0289de]">
+                        {offers[currentOffer].code}
+                      </span>
+                    </p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              <Link
+                to="/#featured-products"
+                className="mt-3 inline-flex w-full items-center justify-center bg-[#0289de] px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-[#0169ab]"
+              >
+                Shop the deal
+              </Link>
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

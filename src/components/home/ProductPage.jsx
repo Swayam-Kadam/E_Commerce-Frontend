@@ -1,163 +1,104 @@
-// import React, { useState } from 'react';
-// import { motion } from 'framer-motion';
-// import ProductCard from './ProductCard';
-// import productsData from '../Products.json';
-
-// const ProductPage = () => {
-//   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-//   // Get all unique categories from products
-//   const categories = ['All', ...new Set(productsData.products.map(product => product.category))];
-  
-//   // Filter products based on selected category
-//   const filteredProducts = selectedCategory === 'All' 
-//     ? productsData.products 
-//     : productsData.products.filter(product => product.category === selectedCategory);
-
-//   return (
-//     <div className="max-w-7xl mx-auto px-4 py-8">
-//       <div className='flex flex-col md:flex-row justify-between items-start md:items-center mb-10'>
-//         <h2 className="text-xl font-bold text-gray-800 mb-4 md:mb-0">Featured Products</h2>
-        
-//         <div className='flex flex-wrap gap-3 md:gap-5'>
-//           {categories.map(category => (
-//             <div 
-//               key={category} 
-//               className="relative cursor-pointer"
-//               onClick={() => setSelectedCategory(category)}
-//             >
-//               <span 
-//                 className={`text-sm font-medium transition-colors duration-300 ${
-//                   selectedCategory === category ? 'text-[#0289de]' : 'text-gray-600 hover:text-[#0289de]'
-//                 }`}
-//               >
-//                 {category.toUpperCase()}
-//               </span>
-              
-//               {/* Animated underline */}
-//               {selectedCategory === category && (
-//                 <motion.div 
-//                   className="absolute left-0 right-0 -bottom-1 h-0.5 bg-[#0289de]"
-//                   initial={{ width: 0 }}
-//                   animate={{ width: "100%" }}
-//                   transition={{ duration: 0.3 }}
-//                 />
-//               )}
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-      
-//       <motion.div 
-//         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-//         initial={{ opacity: 0 }}
-//         animate={{ opacity: 1 }}
-//         transition={{ duration: 0.5 }}
-//         key={selectedCategory} // This helps React identify when to re-render with animation
-//       >
-//         {filteredProducts.map(product => (
-//           <ProductCard key={product.id} product={product} />
-//         ))}
-//       </motion.div>
-
-//       {/* Show message if no products in category */}
-//       {filteredProducts.length === 0 && (
-//         <div className="text-center py-12">
-//           <p className="text-gray-500 text-lg">No products found in this category.</p>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default ProductPage;
-
-
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ProductCard from './ProductCard';
 import { useDispatch, useSelector } from 'react-redux';
-import { getProduct } from './slice/index'; // You'll need to create this slice
+import { getProduct } from './slice/index';
 import PageLoader from '../common/PageLoader';
 
 const ProductPage = () => {
   const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  // Get products from Redux store
-  const { productList, productListLoading } = useSelector(state => state.home || { products: [], loading: false });
 
-  // Fetch products on component mount
+  const { productList, productListLoading } = useSelector(
+    (state) => state.home || { productList: [], productListLoading: false }
+  );
+
   useEffect(() => {
     dispatch(getProduct());
   }, [dispatch]);
 
-  // Get all unique categories from products
-  const categories = ['All', ...new Set(productList.map(product => product.category))];
-  
-  // Filter products based on selected category
-  const filteredProducts = selectedCategory === 'All' 
-    ? productList 
-    : productList.filter(product => product.category === selectedCategory);
+  const categories = ['All', ...new Set(productList.map((product) => product.category))];
+
+  const filteredProducts =
+    selectedCategory === 'All'
+      ? productList
+      : productList.filter((product) => product.category === selectedCategory);
 
   if (productListLoading) {
     return <PageLoader loadingState />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className='flex flex-col md:flex-row justify-between items-start md:items-center mb-10'>
-        <h2 className="text-xl font-bold text-gray-800 mb-4 md:mb-0">Featured Products</h2>
-        
-        <div className='flex flex-wrap gap-3 md:gap-5'>
-          {categories.map(category => (
-            <div 
-              key={category} 
-              className="relative cursor-pointer"
-              onClick={() => setSelectedCategory(category)}
-            >
-              <span 
-                className={`text-sm font-medium transition-colors duration-300 ${
-                  selectedCategory === category ? 'text-[#0289de]' : 'text-gray-600 hover:text-[#0289de]'
-                }`}
-              >
-                {category.toUpperCase()}
-              </span>
-              
-              {/* Animated underline */}
-              {selectedCategory === category && (
-                <motion.div 
-                  className="absolute left-0 right-0 -bottom-1 h-0.5 bg-[#0289de]"
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        key={selectedCategory}
-      >
-        {filteredProducts.map(product => (
-          <ProductCard key={product._id} product={product} />
-        ))}
-      </motion.div>
+    <section
+      id="featured-products"
+      className="relative bg-white py-14 md:py-20"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col gap-6 md:mb-12 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0289de]">
+              Handpicked for you
+            </p>
+            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+              Featured Products
+            </h2>
+            <p className="mt-2 text-base text-slate-500">
+              Explore trending picks across every aisle.
+            </p>
+          </div>
 
-      {/* Show message if no products in category */}
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No products found in this category.</p>
+          <div className="flex flex-wrap gap-2 md:gap-3">
+            {categories.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`relative px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'text-[#0289de]'
+                      : 'text-slate-500 hover:text-[#0289de]'
+                  }`}
+                >
+                  {String(category).toUpperCase()}
+                  {isActive && (
+                    <motion.span
+                      layoutId="product-category-underline"
+                      className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-[#0289de]"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      )}
-    </div>
+
+        <motion.div
+          className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          key={selectedCategory}
+        >
+          {filteredProducts.map((product) => (
+            <ProductCard key={product._id} product={product} />
+          ))}
+        </motion.div>
+
+        {filteredProducts.length === 0 && (
+          <div className="py-16 text-center">
+            <p className="font-display text-xl font-semibold text-slate-800">
+              Nothing here yet
+            </p>
+            <p className="mt-2 text-slate-500">
+              No products found in this category.
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 

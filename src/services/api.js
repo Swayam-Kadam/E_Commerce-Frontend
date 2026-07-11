@@ -22,7 +22,7 @@ class Axios {
 
     if (token)
       req.headers.authorization = token.startsWith("Token")
-        ? token
+        ?  token
         : "Bearer " + token;
     return req;
   };

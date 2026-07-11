@@ -5,6 +5,8 @@ import { axiosReact } from "@/services/api";
 import {
   ADDPRODUCT,
   FETCH_ALL_REVIEW,
+  FETCH_DASHBOARD,
+  DELETE_REVIEW,
 } from "@/services/url";
 
 export const addProduct = createAsyncThunk(
@@ -97,6 +99,65 @@ export const getAllReview = createAsyncThunk(
   }
 );
 
+export const removeProductApi = createAsyncThunk(
+  `admin/removeProductApi`,
+  async (productId, thunkAPI) => {
+    try {
+      const response = await axiosReact.delete(ADDPRODUCT + `${productId}`);
+      return { response, productId };
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          somethingWentWrong
+      );
+      return thunkAPI.rejectWithValue(err?.response?.data);
+    }
+  }
+);
+
+export const removeReviewApi = createAsyncThunk(
+  `admin/removeReviewApi`,
+  async (reviewId, thunkAPI) => {
+    try {
+      const response = await axiosReact.delete(DELETE_REVIEW + `${reviewId}`);
+      return { response, reviewId };
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          somethingWentWrong
+      );
+      return thunkAPI.rejectWithValue(err?.response?.data);
+    }
+  }
+);
+
+export const getDashboard = createAsyncThunk(
+  `admin/getDashboard`,
+  async (payload, thunkAPI) => {
+    try {
+      const year = payload?.year ? `?year=${payload.year}` : '';
+      const response = await axiosReact.get(FETCH_DASHBOARD + year);
+      return response;
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          somethingWentWrong
+      );
+      return thunkAPI.rejectWithValue(err?.response?.data);
+    }
+  }
+);
+
+const emptyChartPeriod = {
+  labels: [],
+  sales: [],
+  revenue: [],
+  profit: [],
+};
+
 const AdminState = {
   productList: [],
   productListLoading: false,
@@ -104,6 +165,23 @@ const AdminState = {
   specificProductLoading:false,
   reviewList: [],
   reviewLoadingList:false,
+  dashboard: {
+    stats: {
+      totalUsers: 0,
+      totalProducts: 0,
+      totalReviews: 0,
+      totalOrders: 0,
+      totalRevenue: 0,
+      growthRate: 0,
+    },
+    charts: {
+      monthly: emptyChartPeriod,
+      quarterly: emptyChartPeriod,
+    },
+    recentOrders: [],
+    year: new Date().getFullYear(),
+  },
+  dashboardLoading: false,
 };
 
 const adminSlice = createSlice({
@@ -230,6 +308,33 @@ const adminSlice = createSlice({
     builder.addCase(getAllReview.rejected, (state) => {
       state.reviewList = [];
       state.reviewLoadingList = false;
+    });
+
+    builder.addCase(getDashboard.pending, (state) => {
+      state.dashboardLoading = true;
+    });
+    builder.addCase(getDashboard.fulfilled, (state, action) => {
+      const apiData = action.payload?.data?.data;
+      if (apiData) {
+        state.dashboard = {
+          stats: {
+            ...state.dashboard.stats,
+            ...(apiData.stats || {}),
+          },
+          charts: {
+            monthly: apiData.charts?.monthly || emptyChartPeriod,
+            quarterly: apiData.charts?.quarterly || emptyChartPeriod,
+          },
+          recentOrders: Array.isArray(apiData.recentOrders)
+            ? apiData.recentOrders
+            : [],
+          year: apiData.year || new Date().getFullYear(),
+        };
+      }
+      state.dashboardLoading = false;
+    });
+    builder.addCase(getDashboard.rejected, (state) => {
+      state.dashboardLoading = false;
     });
   },
 });

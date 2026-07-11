@@ -1,16 +1,28 @@
-import React from 'react'
-import Chart from './component/Chart'
-import Sample from './common/Sample'
-import Card from './pages/Card'
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import Chart from './component/Chart';
+import Card from './pages/Card';
+import PageLoader from '@/components/common/PageLoader';
+import { getDashboard } from './slice';
 
 const AdminPage = () => {
-  return (
-    <div className='min-h-screen max-w-[100rem]  mx-auto'>
-        <Card/>
-        <Chart/>
-        {/* <Sample/> */}
-    </div>
-  )
-}
+  const dispatch = useDispatch();
+  const { dashboardLoading } = useSelector((state) => state.admin);
 
-export default AdminPage
+  useEffect(() => {
+    dispatch(getDashboard());
+  }, [dispatch]);
+
+  if (dashboardLoading) {
+    return <PageLoader loadingState />;
+  }
+
+  return (
+    <div className="mx-auto min-h-screen max-w-[100rem]">
+      <Card />
+      <Chart />
+    </div>
+  );
+};
+
+export default AdminPage;

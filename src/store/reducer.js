@@ -5,6 +5,8 @@ import loginReducer from '../components/auth/slice/loginSlice'
 import adminReducer from '../components/Admin/slice/index'
 import homeReducer from '../components/home/slice/index'
 import SpecificProductReducer from '../components/SelectProduct/slice/index'
+import orderReducer from '../components/profile/slice/orderSlice'
+import settingsReducer from '../components/profile/slice/settingsSlice'
 
 
 const reducer = combineReducers({
@@ -14,6 +16,8 @@ const reducer = combineReducers({
     admin:adminReducer,
     home:homeReducer,
     specificProduct:SpecificProductReducer,
+    order:orderReducer,
+    settings:settingsReducer,
 })
 
 export default reducer;

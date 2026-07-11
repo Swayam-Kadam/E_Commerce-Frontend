@@ -77,8 +77,12 @@ export const createOrder = createAsyncThunk(
       const response = await axiosReact.post(CREATE_ORDER, payload);
       return response;
     } catch (err) {
-      toast.error(err?.response?.data?.error || somethingWentWrong);
-      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          somethingWentWrong
+      );
+      return thunkAPI.rejectWithValue(err?.response?.data);
     }
   }
 );
@@ -91,8 +95,12 @@ export const verifyPayment = createAsyncThunk(
       const response = await axiosReact.post(VERIFY_PAYMENT, payload);
       return response;
     } catch (err) {
-      toast.error(err?.response?.data?.error || somethingWentWrong);
-      return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          somethingWentWrong
+      );
+      return thunkAPI.rejectWithValue(err?.response?.data);
     }
   }
 );

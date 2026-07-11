@@ -63,7 +63,6 @@ const LoginPage = () => {
         })
       } catch (error) {
         setAuthError('An unexpected error occurred');
-        console.error('Login error:', error);
       } finally {
         setIsSubmitting(false);
       }
