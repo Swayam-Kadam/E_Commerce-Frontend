@@ -33,7 +33,7 @@ const FloatOffer = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 80, scale: 0.96 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed bottom-6 right-4 z-50 sm:right-6"
+          className="fixed bottom-6 left-4 z-50 sm:left-6"
         >
           <div className="relative w-[min(92vw,300px)] overflow-hidden border border-sky-100 bg-white shadow-[0_24px_50px_-20px_rgba(2,137,222,0.55)]">
             <div className="h-1 w-full bg-[linear-gradient(90deg,#0169ab,#0289de,#38bdf8)]" />
@@ -41,7 +41,7 @@ const FloatOffer = () => {
             <button
               type="button"
               onClick={() => setIsVisible(false)}
-              className="absolute right-2 top-3 flex h-7 w-7 items-center justify-center text-slate-400 transition hover:text-slate-700"
+              className="absolute right-2 top-3 flex h-7 w-7 items-center justify-center text-slate-400 transition hover:text-slate-700 cursor-pointer"
               aria-label="Close offer"
             >
               ×

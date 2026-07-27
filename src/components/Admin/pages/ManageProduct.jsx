@@ -19,6 +19,11 @@ import EditProductModal from '../component/EditProductModal';
 import ConfirmModal from '../common/ConfirmModal';
 import CommonMuiTable, { StatusChip } from '../common/CommonMuiTable';
 import { getProduct, removeProductApi, deleteProduct } from '../slice';
+import {
+  categoriesFromProducts,
+  getCategoryName,
+  matchesCategory,
+} from '@/utils/category';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80';
@@ -39,14 +44,10 @@ const ManageProduct = () => {
     dispatch(getProduct());
   }, [dispatch]);
 
-  const categories = useMemo(() => {
-    if (!productList?.length) return [];
-    return [
-      ...new Set(
-        productList.map((product) => product.category).filter(Boolean)
-      ),
-    ].sort();
-  }, [productList]);
+  const categories = useMemo(
+    () => categoriesFromProducts(productList),
+    [productList]
+  );
 
   const filteredProducts = useMemo(() => {
     if (!productList?.length) return [];
@@ -55,19 +56,20 @@ const ManageProduct = () => {
 
     if (query.trim()) {
       const searchTerm = query.toLowerCase().trim();
-      filtered = filtered.filter(
-        (product) =>
+      filtered = filtered.filter((product) => {
+        const categoryName = getCategoryName(product.category).toLowerCase();
+        return (
           product.name?.toLowerCase().includes(searchTerm) ||
           product.description?.toLowerCase().includes(searchTerm) ||
-          product.category?.toLowerCase().includes(searchTerm) ||
+          categoryName.includes(searchTerm) ||
           String(product.price || '').includes(searchTerm)
-      );
+        );
+      });
     }
 
     if (categoryQuery) {
-      filtered = filtered.filter(
-        (product) =>
-          product.category?.toLowerCase() === categoryQuery.toLowerCase()
+      filtered = filtered.filter((product) =>
+        matchesCategory(product.category, categoryQuery)
       );
     }
 
@@ -142,7 +144,7 @@ const ManageProduct = () => {
       sortable: true,
       render: (row) => (
         <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-          {row.category || '—'}
+          {getCategoryName(row.category) || '—'}
         </Typography>
       ),
     },

@@ -8,7 +8,7 @@ import {
   getWhishlistCount,
   clearWhishlist,
 } from '../slice/WishlistSlice';
-import { addToCart } from '../../AddToCart/slice/CartSlice';
+import { addCart, getCartCount } from '../../AddToCart/slice/CartSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import PageLoader from '@/components/common/PageLoader';
@@ -40,15 +40,36 @@ const WishlistPage = () => {
   };
 
   const moveToCart = (item) => {
+    const productId = item._id || item.id;
+    if (!productId) {
+      toast.error('Invalid product');
+      return;
+    }
+
+    if (!item.stock || item.stock === 0) {
+      toast.error('Product is out of stock');
+      return;
+    }
+
     dispatch(
-      addToCart({
-        id: item.id || item._id,
-        name: item.name,
-        price: item.price,
-        image: item.image || item?.images?.[0]?.url,
+      addCart({
+        productId,
+        variant: {
+          color: item?.variants?.[0]?.color?.[0] || null,
+          size: item?.variants?.[0]?.size?.[0] || null,
+        },
+        quantity: 1,
       })
-    );
-    dispatch(removeFromWishlist(item.id || item._id));
+    ).then((res) => {
+      if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+        dispatch(getCartCount());
+        toast.success('Moved to cart successfully');
+        dispatch(toggleWhishlist({ productId })).then(() => {
+          dispatch(getWhishlistCount());
+          dispatch(getAllWhishlist());
+        });
+      }
+    });
   };
 
   const clearWishlistHandler = () => {

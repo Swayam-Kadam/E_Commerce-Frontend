@@ -3,13 +3,28 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { somethingWentWrong } from "@/constants/SchemaValidation";
 import { axiosReact } from "@/services/api";
 import { ADDPRODUCT } from "@/services/url";
+import { getCategoryName } from "@/utils/category";
+
+const normalizeProduct = (item) => {
+  if (!item) return item;
+  const categoryValue = item.category;
+  return {
+    ...item,
+    id: item._id || item.id || null,
+    category: getCategoryName(categoryValue) || (typeof categoryValue === "string" ? categoryValue : ""),
+    categoryId:
+      typeof categoryValue === "object" && categoryValue !== null
+        ? categoryValue._id || null
+        : item.categoryId || null,
+  };
+};
 
 export const getProduct = createAsyncThunk(
   `home/getProduct`,
   async (payload, thunkAPI) => {
     try {
       const response = await axiosReact.get(ADDPRODUCT);
-      return response.data; // Return data only
+      return response.data;
     } catch (err) {
       toast.error(err?.response?.data?.error || somethingWentWrong);
       return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
@@ -19,10 +34,10 @@ export const getProduct = createAsyncThunk(
 
 export const getSpecificProduct = createAsyncThunk(
   `home/getSpecificProduct`,
-  async (productId, thunkAPI) => { // Rename payload to productId for clarity
+  async (productId, thunkAPI) => {
     try {
-      const response = await axiosReact.get(ADDPRODUCT + `${productId}`); // Add slash if needed
-      return response; // Return data only, not full response
+      const response = await axiosReact.get(ADDPRODUCT + `${productId}`);
+      return response;
     } catch (err) {
       toast.error(err?.response?.data?.error || somethingWentWrong);
       return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
@@ -33,7 +48,7 @@ export const getSpecificProduct = createAsyncThunk(
 const HomeState = {
   productList: [],
   productListLoading: false,
-  specificProduct: null, // Changed from array to null and fixed typo
+  specificProduct: null,
   specificProductLoading: false,
 };
 
@@ -43,20 +58,17 @@ const homeSlice = createSlice({
   reducers: {
     clearSpecificProduct: (state) => {
       state.specificProduct = null;
-    }
+    },
   },
   extraReducers: (builder) => {
-    // Get all products
     builder.addCase(getProduct.pending, (state) => {
       state.productListLoading = true;
     });
-    
+
     builder.addCase(getProduct.fulfilled, (state, action) => {
-      // Assuming your API returns { data: [...] } structure
       const apiData = action.payload;
-      
       let products = [];
-      
+
       if (apiData?.data && Array.isArray(apiData.data)) {
         products = apiData.data;
       } else if (apiData?.data?.data && Array.isArray(apiData.data.data)) {
@@ -64,56 +76,48 @@ const homeSlice = createSlice({
       } else if (Array.isArray(apiData)) {
         products = apiData;
       }
-      
-      state.productList = products.map((item) => ({
-        ...item,
-        id: item._id || null,
-      }));
-      
+
+      state.productList = products.map((item) => normalizeProduct(item));
       state.productListLoading = false;
     });
-    
+
     builder.addCase(getProduct.rejected, (state) => {
       state.productListLoading = false;
     });
 
-    // Get specific product
     builder.addCase(getSpecificProduct.pending, (state) => {
-      state.specificProduct = null; // Reset to null
+      state.specificProduct = null;
       state.specificProductLoading = true;
     });
-    
+
     builder.addCase(getSpecificProduct.fulfilled, (state, action) => {
-      // The API should return a single product object
       const apiData = action.payload;
-      
       let product = null;
-      
-      // Handle different response structures
-      if (apiData?.data) {
-        // Structure: { data: { ...product } }
-        product = apiData.data;
-      } else if (apiData?.data?.data) {
-        // Structure: { data: { data: { ...product } } }
+
+      if (apiData?.data?.data && typeof apiData.data.data === "object" && !Array.isArray(apiData.data.data)) {
         product = apiData.data.data;
+      } else if (apiData?.data) {
+        product =
+          apiData.data?.data && !Array.isArray(apiData.data.data) && !apiData.data._id
+            ? apiData.data.data
+            : apiData.data;
       } else {
-        // Structure: directly the product object
         product = apiData;
       }
-      
-      // If product exists, add id field for compatibility
+
+      if (product?.success && product?.data && !product?._id) {
+        product = product.data;
+      }
+
       if (product) {
-        state.specificProduct = {
-          ...product,
-          id: product._id || null,
-        };
+        state.specificProduct = normalizeProduct(product);
       } else {
         state.specificProduct = null;
       }
-      
+
       state.specificProductLoading = false;
     });
-    
+
     builder.addCase(getSpecificProduct.rejected, (state) => {
       state.specificProduct = null;
       state.specificProductLoading = false;

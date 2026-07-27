@@ -8,6 +8,26 @@ import {
   FETCH_DASHBOARD,
   DELETE_REVIEW,
 } from "@/services/url";
+import { getCategoryName } from "@/utils/category";
+
+const normalizeProduct = (item) => {
+  if (!item) return item;
+  const categoryValue = item.category;
+  return {
+    ...item,
+    id: item?._id || null,
+    category:
+      getCategoryName(categoryValue) ||
+      (typeof categoryValue === "string" ? categoryValue : ""),
+    categoryId:
+      typeof categoryValue === "object" && categoryValue !== null
+        ? categoryValue._id || null
+        : item.categoryId || null,
+    colors: item?.variants?.[0]?.color
+      ? item.variants[0].color.join(", ")
+      : null,
+  };
+};
 
 export const addProduct = createAsyncThunk(
   `admin/addProduct`,
@@ -231,15 +251,7 @@ const adminSlice = createSlice({
         products = apiData;
       }
       
-      // Transform products to include id property (using _id)
-      state.productList = products.map((item) => ({
-        ...item,
-        id: item?._id || null, // Use _id as id for consistency
-        // If you want colors as a string instead of array
-        colors: item?.variants?.[0]?.color ? 
-          item.variants[0].color.join(', ') : 
-          null
-      }));
+      state.productList = products.map((item) => normalizeProduct(item));
       
       state.productListLoading = false;
     });

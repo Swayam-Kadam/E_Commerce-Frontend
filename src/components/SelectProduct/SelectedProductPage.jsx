@@ -9,11 +9,12 @@ import * as Yup from 'yup';
 import { Rating } from '@smastrom/react-rating';
 import '@smastrom/react-rating/style.css';
 import { toast } from 'react-toastify';
-import { getSpecificProduct } from '../home/slice/index';
+import { getSpecificProduct, getProduct } from '../home/slice/index';
 import { addSpecificProductReview, getSpecificProductReview } from './slice';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { FiTruck, FiShield, FiRefreshCw, FiChevronRight } from 'react-icons/fi';
 import PageLoader from '../common/PageLoader';
+import { getCategoryName, matchesCategory } from '@/utils/category';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
@@ -49,11 +50,15 @@ const SelectedProductPage = () => {
       specificProductReview: state.specificProduct.specificProductReview,
     })
   );
-  const { products: allProducts } = useSelector(
-    (state) => state.products || { products: [] }
+  const { productList: allProducts = [] } = useSelector(
+    (state) => state.home || { productList: [] }
   );
 
-  const productData = specificProduct?.data || null;
+  // Slice stores the product object directly (normalized); support legacy `{ data }` shape too
+  const productData =
+    specificProduct?._id || specificProduct?.name
+      ? specificProduct
+      : specificProduct?.data || null;
   const productReviews = productData?.reviews || [];
   const product = productData;
 
@@ -62,10 +67,7 @@ const SelectedProductPage = () => {
     productReviews.reduce((acc, review) => acc + (review.rating || 0), 0) || 0;
   const averageRating = reviewCount > 0 ? ratingSum / reviewCount : 0;
 
-  const wishlistItems = useSelector((state) => state.wishlist?.items) || [];
-  const isInWishlist = product
-    ? wishlistItems.some((item) => item.id === product._id || item.id === product.id)
-    : false;
+  const isInWishlist = Boolean(product?.isWishlist);
 
   const validationSchema = Yup.object({
     review: Yup.string()
@@ -125,6 +127,9 @@ const SelectedProductPage = () => {
         .catch(() => {
           setLoading(false);
         });
+    }
+    if (!allProducts.length) {
+      dispatch(getProduct());
     }
   }, [id, dispatch]);
 
@@ -192,7 +197,10 @@ const SelectedProductPage = () => {
   };
 
   const relatedProducts = allProducts
-    .filter((p) => p._id !== id && p.category === product?.category)
+    .filter((p) => {
+      if (p._id === id) return false;
+      return matchesCategory(p.category, getCategoryName(product?.category));
+    })
     .slice(0, 3);
 
   const incrementQuantity = () => {
@@ -256,7 +264,7 @@ const SelectedProductPage = () => {
             Home
           </Link>
           <FiChevronRight className="h-3.5 w-3.5 opacity-50" />
-          <span className="capitalize">{product.category || 'Shop'}</span>
+          <span className="capitalize">{getCategoryName(product.category) || 'Shop'}</span>
           <FiChevronRight className="h-3.5 w-3.5 opacity-50" />
           <span className="truncate text-slate-800">{product.name}</span>
         </nav>
@@ -329,7 +337,7 @@ const SelectedProductPage = () => {
             transition={{ duration: 0.5, delay: 0.08 }}
           >
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0289de]">
-              {product.category || 'SwiftCart'}
+              {getCategoryName(product.category) || 'SwiftCart'}
             </p>
             <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 md:text-4xl lg:text-5xl">
               {product.name}
@@ -495,15 +503,13 @@ const SelectedProductPage = () => {
                 className="flex h-12 w-12 shrink-0 items-center justify-center border border-slate-200 transition hover:border-rose-200 hover:bg-rose-50"
                 onClick={() => handleWishlist(product._id)}
                 aria-label={
-                  product?.isWishlist || isInWishlist
-                    ? 'Remove from wishlist'
-                    : 'Add to wishlist'
+                  isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'
                 }
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className={`h-5 w-5 ${
-                    product?.isWishlist
+                    isInWishlist
                       ? 'fill-rose-500 text-rose-500'
                       : 'fill-none text-slate-500'
                   }`}
@@ -798,7 +804,7 @@ const SelectedProductPage = () => {
                     </div>
                     <div className="p-4">
                       <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        {relatedProduct.category}
+                        {getCategoryName(relatedProduct.category)}
                       </span>
                       <h3 className="mt-1 truncate font-display text-lg font-semibold text-slate-900">
                         {relatedProduct.name}

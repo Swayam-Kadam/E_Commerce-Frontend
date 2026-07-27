@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import ProductCard from './ProductCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProduct } from './slice/index';
 import PageLoader from '../common/PageLoader';
+import { categoriesFromProducts, matchesCategory } from '@/utils/category';
 
 const ProductPage = () => {
   const dispatch = useDispatch();
@@ -17,12 +18,17 @@ const ProductPage = () => {
     dispatch(getProduct());
   }, [dispatch]);
 
-  const categories = ['All', ...new Set(productList.map((product) => product.category))];
+  const categories = useMemo(
+    () => ['All', ...categoriesFromProducts(productList)],
+    [productList]
+  );
 
-  const filteredProducts =
-    selectedCategory === 'All'
-      ? productList
-      : productList.filter((product) => product.category === selectedCategory);
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'All') return productList;
+    return productList.filter((product) =>
+      matchesCategory(product.category, selectedCategory)
+    );
+  }, [productList, selectedCategory]);
 
   if (productListLoading) {
     return <PageLoader loadingState />;

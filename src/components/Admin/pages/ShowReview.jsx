@@ -66,7 +66,10 @@ const ShowReview = () => {
       if (product && typeof product === 'object') {
         productName = product.name || productName;
         productImage = product.images?.[0]?.url || product.image || productImage;
-        productCategory = product.category || productCategory;
+        productCategory =
+          typeof product.category === 'object' && product.category
+            ? product.category.name || productCategory
+            : product.category || productCategory;
         productPrice = product.price || 0;
       } else if (typeof product === 'string') {
         productName = `Product ${product.slice(0, 6)}...`;

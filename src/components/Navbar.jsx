@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from './contexts/authContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TiShoppingCart } from "react-icons/ti";
 import { FiSearch, FiUser, FiHeart, FiMenu } from "react-icons/fi";
@@ -10,13 +9,11 @@ import { FaHeadset } from "react-icons/fa";
 import { useDispatch, useSelector } from 'react-redux';
 import Cookies from 'js-cookie';
 import { cookieKeys } from '@/services/cookies';
-import routesConfig from '@/routes/routes.config';
 import routesConstants from '@/routes/routesConstants';
 import { getUserProfile, logout, postLogout } from './auth/slice/loginSlice';
 import { toast } from 'react-toastify';
 import { getWhishlistCount } from './Wishlist/slice/WishlistSlice';
 import { getCartCount } from './AddToCart/slice/CartSlice';
-useDispatch
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -25,26 +22,27 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredItem, setHoveredItem] = useState(null);
 
-  const {  totalQuantity } = useSelector(state => state.cart);
-  const {  totalWishlistQuantity } = useSelector(state => state.wishlist);
-  const {userDetail} = useSelector(state => state.login);
+  const { userDetail } = useSelector((state) => state.login);
 
-  const { userProfile, userProfileLoading, userProfileFetched, whishlistCount, cartCount  } = useSelector(state => ({
+  const {
+    userProfile,
+    userProfileFetched,
+    whishlistCount,
+    cartCount,
+  } = useSelector((state) => ({
     userProfile: state.login.userProfile,
-    userProfileLoading: state.login.userProfileLoading,
-    userProfileFetched : state.login.userProfileFetched,
+    userProfileFetched: state.login.userProfileFetched,
     whishlistCount: state?.wishlist?.whishlistCount?.data?.count,
     cartCount: state?.cart?.cartCount?.data?.count,
-    }));
+  }));
 
- useEffect(() => {
-  if (!userProfileFetched) {
-    dispatch(getUserProfile());
-    dispatch(getWhishlistCount());
-    dispatch(getCartCount());
-  }
-}, [dispatch, userProfileFetched]);
-
+  useEffect(() => {
+    if (!userProfileFetched) {
+      dispatch(getUserProfile());
+      dispatch(getWhishlistCount());
+      dispatch(getCartCount());
+    }
+  }, [dispatch, userProfileFetched]);
 
   const handleLogout = async () => {
   try {
@@ -85,61 +83,52 @@ const Navbar = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Handle search functionality
+    const q = searchQuery.trim();
+    if (!q) {
+      navigate('/category/All');
+      return;
+    }
+    navigate(`/category/All?search=${encodeURIComponent(q)}`);
+    setIsMenuOpen(false);
   };
 
-  // Dropdown data
+  // Dropdown data — links point to real category routes
   const dropdownData = {
     fashion: {
       title: "Fashion",
       items: [
-        { name: "Men's Fashion", link: "/mens-fashion" },
-        { name: "Women's Fashion", link: "/womens-fashion" },
-        { name: "Kids' Fashion", link: "/kids-fashion" },
-        { name: "Accessories", link: "/fashion-accessories" },
-        { name: "Jewelry", link: "/jewelry" },
+        { name: "All Fashion", link: "/category/Fashion" },
+        { name: "Clothing", link: "/category/Clothing" },
       ]
     },
     electronics: {
       title: "Electronics",
       items: [
-        { name: "Smartphones", link: "/smartphones" },
-        { name: "Laptops & Computers", link: "/laptops-computers" },
-        { name: "TV & Audio", link: "/tv-audio" },
-        { name: "Cameras & Photography", link: "/cameras" },
-        { name: "Gaming Consoles", link: "/gaming" },
-        { name: "Wearables", link: "/wearables" },
+        { name: "All Electronics", link: "/category/Electronics" },
       ]
     },
     bags: {
       title: "Bags",
       items: [
-        { name: "Handbags", link: "/handbags" },
-        { name: "Backpacks", link: "/backpacks" },
-        { name: "Travel Bags", link: "/travel-bags" },
-        { name: "Wallets", link: "/wallets" },
-        { name: "Luggage", link: "/luggage" },
+        { name: "All Bags", link: "/category/Bags" },
       ]
     },
     footwear: {
       title: "Footwear",
       items: [
-        { name: "Men's Shoes", link: "/mens-shoes" },
-        { name: "Women's Shoes", link: "/womens-shoes" },
-        { name: "Sports Shoes", link: "/sports-shoes" },
-        { name: "Sandals & Flip Flops", link: "/sandals" },
-        { name: "Boots", link: "/boots" },
+        { name: "Sports", link: "/category/Sports" },
+        { name: "All Products", link: "/category/All" },
       ]
     },
     category: {
       title: "category",
       items: [
-        { images:'/images/png/fashion.png',name: "Fashion", link: "/category/fashion" },
-        { images:'/images/png/electronics.png',name: "Electronics", link: "/category/electronics" },
-        { images:'/images/png/bags.png',name: "Bags", link: "/category/bags" },
-        { images:'/images/png/footwear.png',name: "Footwear", link: "/category/footwear" },
-        { images:'/images/png/groceries.png',name: "Groceries", link: "/category/groceries" },
-        { images:'/images/png/beauty.png',name: "Beauty", link: "/category/beauty" }
+        { images:'/images/png/fashion.png',name: "Fashion", link: "/category/Fashion" },
+        { images:'/images/png/electronics.png',name: "Electronics", link: "/category/Electronics" },
+        { images:'/images/png/bags.png',name: "Bags", link: "/category/Bags" },
+        { images:'/images/png/footwear.png',name: "Sports", link: "/category/Sports" },
+        { images:'/images/png/groceries.png',name: "Groceries", link: "/category/Groceries" },
+        { images:'/images/png/beauty.png',name: "Home", link: "/category/Home" }
       ]
     },
     profile: {

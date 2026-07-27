@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ProductCard from '../../home/ProductCard';
 import FilterComponent from '../components/FilterComponent';
@@ -7,6 +7,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getProduct } from '@/components/home/slice';
 import PageLoader from '@/components/common/PageLoader';
 import { FiChevronRight, FiSliders } from 'react-icons/fi';
+import {
+  categoriesFromProducts,
+  matchesCategory,
+} from '@/utils/category';
 
 const defaultFilters = {
   priceRange: [0, 10000],
@@ -16,7 +20,12 @@ const defaultFilters = {
 };
 
 const MainCategory = () => {
-  const { categoryName } = useParams();
+  const { categoryName: rawCategoryName } = useParams();
+  const categoryName = rawCategoryName
+    ? decodeURIComponent(rawCategoryName)
+    : 'All';
+  const [searchParams] = useSearchParams();
+  const searchQuery = (searchParams.get('search') || '').trim().toLowerCase();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -32,10 +41,7 @@ const MainCategory = () => {
   );
 
   const categories = useMemo(() => {
-    const uniqueCategories = [
-      ...new Set(productList.map((product) => product.category)),
-    ];
-    return ['All', ...uniqueCategories.filter((cat) => cat && cat.trim() !== '')];
+    return ['All', ...categoriesFromProducts(productList)];
   }, [productList]);
 
   const hasActiveFilters =
@@ -43,13 +49,29 @@ const MainCategory = () => {
     filters.priceRange[1] < 10000 ||
     filters.rating > 0 ||
     filters.inStock ||
-    filters.isBestSeller;
+    filters.isBestSeller ||
+    Boolean(searchQuery);
 
   useEffect(() => {
     let result = [...productList];
 
     if (categoryName && categoryName !== 'All') {
-      result = result.filter((product) => product.category === categoryName);
+      result = result.filter((product) =>
+        matchesCategory(product.category, categoryName)
+      );
+    }
+
+    if (searchQuery) {
+      result = result.filter((product) => {
+        const name = String(product.name || '').toLowerCase();
+        const description = String(product.description || '').toLowerCase();
+        const category = String(product.category || '').toLowerCase();
+        return (
+          name.includes(searchQuery) ||
+          description.includes(searchQuery) ||
+          category.includes(searchQuery)
+        );
+      });
     }
 
     result = result.filter((product) => {
@@ -67,10 +89,13 @@ const MainCategory = () => {
     });
 
     setFilteredProducts(result);
-  }, [categoryName, filters, productList]);
+  }, [categoryName, filters, productList, searchQuery]);
 
   const handleCategoryChange = (category) => {
-    navigate(`/category/${category}`);
+    const params = searchQuery
+      ? `?search=${encodeURIComponent(searchQuery)}`
+      : '';
+    navigate(`/category/${encodeURIComponent(category)}${params}`);
   };
 
   const handleFilterChange = (newFilters) => {
@@ -115,7 +140,7 @@ const MainCategory = () => {
           <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             {title}
           </h1>
-          <p className="mt-2 max-w-xl text-slate-500">
+          <p className="mt-2 max-w-xl text-base text-slate-500">
             Filter by price, rating, and availability to find the right pick.
           </p>
         </motion.header>
@@ -124,8 +149,10 @@ const MainCategory = () => {
           <div className="flex min-w-max gap-1 sm:gap-2">
             {categories.map((category) => {
               const isActive =
-                categoryName === category ||
-                ((!categoryName || categoryName === 'All') && category === 'All');
+                (category === 'All' &&
+                  (!categoryName || categoryName === 'All')) ||
+                (category !== 'All' &&
+                  matchesCategory(categoryName, category));
 
               return (
                 <button

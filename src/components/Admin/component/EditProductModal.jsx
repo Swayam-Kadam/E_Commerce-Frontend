@@ -190,7 +190,10 @@ const EditProductModal = ({
           // Set initial values for Formik
           formik.setValues({
             name: specificPro.name || '',
-            category: specificPro.category || '',
+            category:
+              typeof specificPro.category === 'object' && specificPro.category
+                ? specificPro.category.name || ''
+                : specificPro.category || '',
             price: specificPro.price || 0,
             originalPrice: specificPro.originalPrice || 0,
             rating: specificPro.averageRating || 0,

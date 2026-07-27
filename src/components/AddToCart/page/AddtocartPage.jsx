@@ -59,6 +59,7 @@ const AddtocartPage = () => {
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [addressType, setAddressType] = useState('home');
+  const [updatingItemId, setUpdatingItemId] = useState(null);
   const [, setRazorpayLoaded] = useState(false);
 
   const profileAddresses = useMemo(() => {
@@ -176,11 +177,18 @@ const AddtocartPage = () => {
               })
             );
 
-            if (verifyRes?.payload?.data?.success) {
+            if (verifyPayment.fulfilled.match(verifyRes) && verifyRes?.payload?.data?.success) {
               toast.success('Payment successful! Thank you for your purchase.');
               dispatch(getCart());
               dispatch(getCartCount());
               dispatch(resetPaymentState());
+            } else if (verifyPayment.rejected.match(verifyRes)) {
+              const code = verifyRes?.payload?.code;
+              if (code === 'OUT_OF_STOCK_AFTER_PAY') {
+                // Toast already shown by thunk; refresh cart so user sees remaining stock state
+                dispatch(getCart());
+                dispatch(getCartCount());
+              }
             }
           } catch (error) {
             console.error('Verification error:', error);
@@ -221,9 +229,26 @@ const AddtocartPage = () => {
     }
   };
 
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return;
-    dispatch(updateItemQuantity({ id, quantity: newQuantity }));
+  const updateQuantity = (item, newQuantity) => {
+    const itemId = item?._id || item?.id;
+    if (!itemId || newQuantity < 1 || updatingItemId) return;
+
+    const stock = item?.product?.stock;
+    if (typeof stock === 'number' && newQuantity > stock) {
+      toast.error(`Only ${stock} items available in stock`);
+      return;
+    }
+
+    setUpdatingItemId(itemId);
+    dispatch(updateItemQuantity({ id: itemId, quantity: newQuantity }))
+      .then((res) => {
+        if (res?.payload?.status === 200 || res?.payload?.data?.success) {
+          dispatch(getCartCount());
+        }
+      })
+      .finally(() => {
+        setUpdatingItemId(null);
+      });
   };
 
   const removeItem = (id) => {
@@ -345,8 +370,12 @@ const AddtocartPage = () => {
                       <div className="flex items-center border border-slate-200">
                         <button
                           type="button"
-                          className="flex h-9 w-9 items-center justify-center text-[#0289de] transition hover:bg-slate-50"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="flex h-9 w-9 items-center justify-center text-[#0289de] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          onClick={() => updateQuantity(item, item.quantity - 1)}
+                          disabled={
+                            updatingItemId === (item._id || item.id) ||
+                            item.quantity <= 1
+                          }
                           aria-label="Decrease quantity"
                         >
                           <FaMinusCircle />
@@ -356,8 +385,13 @@ const AddtocartPage = () => {
                         </span>
                         <button
                           type="button"
-                          className="flex h-9 w-9 items-center justify-center text-[#0289de] transition hover:bg-slate-50"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="flex h-9 w-9 items-center justify-center text-[#0289de] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          onClick={() => updateQuantity(item, item.quantity + 1)}
+                          disabled={
+                            updatingItemId === (item._id || item.id) ||
+                            (typeof item?.product?.stock === 'number' &&
+                              item.quantity >= item.product.stock)
+                          }
                           aria-label="Increase quantity"
                         >
                           <FaPlusCircle />

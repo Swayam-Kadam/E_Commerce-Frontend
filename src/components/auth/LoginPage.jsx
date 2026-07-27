@@ -1,16 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
-import { cookieKeys } from "@/services/cookies";
-import Cookies from 'js-cookie';
 import { useDispatch, useSelector } from 'react-redux';
 import { getLogin } from './slice/loginSlice';
 import { toast}  from 'react-toastify';
 import routesConstants from '@/routes/routesConstants';
-import PageLoader from '../common/PageLoader';
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 
 const LoginPage = () => {
@@ -43,24 +39,22 @@ const LoginPage = () => {
       setAuthError('');
       
       try {
-
-        let payload={
-          email:values.email,
-          password:values.passwords
-        }
-        dispatch(getLogin(payload)).then((res)=>{
-          if(res.payload.tokens.accessToken){
-          toast.success("Login Successfully");
-          Cookies.set(cookieKeys?.USER, JSON.stringify(res?.payload?.user));
-          Cookies.set(cookieKeys?.TOKEN, JSON.stringify(res?.payload?.tokens?.accessToken));
-          Cookies.set(cookieKeys?.REFRESH_TOKEN, JSON.stringify(res?.payload?.tokens?.refreshToken));
-          if(res.payload.user.role === 'admin'){
+        const payload = {
+          email: values.email,
+          password: values.passwords,
+        };
+        // Tokens/user are already saved by getLogin via Cookies helper — do not double-stringify
+        const res = await dispatch(getLogin(payload));
+        if (res?.payload?.tokens?.accessToken) {
+          toast.success('Login Successfully');
+          if (res.payload.user?.role === 'admin') {
             navigate(routesConstants?.ADMIN);
-          }else{
-          navigate(routesConstants?.HOMEPAGE);
+          } else {
+            navigate(routesConstants?.HOMEPAGE);
           }
-          }
-        })
+        } else if (res?.payload) {
+          setAuthError(typeof res.payload === 'string' ? res.payload : 'Login failed');
+        }
       } catch (error) {
         setAuthError('An unexpected error occurred');
       } finally {

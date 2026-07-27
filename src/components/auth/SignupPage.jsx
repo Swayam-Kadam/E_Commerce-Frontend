@@ -3,13 +3,16 @@ import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { useDispatch } from 'react-redux';
+import { postSignup } from './slice/loginSlice';
+import routesConstants from '@/routes/routesConstants';
 
 const SignupPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Formik configuration with Yup validation
   const formik = useFormik({
@@ -40,48 +43,27 @@ const SignupPage = () => {
       setIsSubmitting(true);
       setAuthError('');
       setAuthSuccess('');
-      
+
+      const username = values.fullName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+
       try {
-        // First, create the user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
-          options: {
-            data: {
-              full_name: values.fullName,
-            }
-          }
-        });
+        const res = await dispatch(
+          postSignup({
+            username: username || values.email.split('@')[0],
+            email: values.email,
+            password: values.password,
+          })
+        );
 
-        if (authError) {
-          setAuthError(authError.message);
-          return;
-        }
-
-        // Then, store user data in a separate table
-        if (authData.user) {
-          const { error: dbError } = await supabase
-            .from('users')
-            .insert([
-              {
-                id: authData.user.id,
-                full_name: values.fullName,
-                email: values.email,
-                created_at: new Date().toISOString(),
-              }
-            ]);
-
-          if (dbError) {
-            console.error('Error storing user data:', dbError);
-            setAuthError('Account created but there was an error saving your profile. Please contact support.');
-          } else {
-            setAuthSuccess('Account created successfully! Please check your email for verification.');
-            
-            // Redirect to login after a delay
-            setTimeout(() => {
-              navigate('/login');
-            }, 3000);
-          }
+        if (postSignup.fulfilled.match(res)) {
+          setAuthSuccess('Account created successfully!');
+          navigate(routesConstants.HOMEPAGE);
+        } else {
+          setAuthError(res.payload || 'Signup failed. Please try again.');
         }
       } catch (error) {
         setAuthError('An unexpected error occurred');

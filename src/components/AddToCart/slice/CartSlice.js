@@ -1,6 +1,15 @@
 import { somethingWentWrong } from '@/constants/SchemaValidation';
 import { axiosReact } from '@/services/api';
-import { CART_ADD, CART_COUNT, CLEAR_CART, CREATE_ORDER, FETCH_ALL_CART, REMOVE_CART, VERIFY_PAYMENT } from '@/services/url';
+import {
+  CART_ADD,
+  CART_COUNT,
+  CLEAR_CART,
+  CREATE_ORDER,
+  FETCH_ALL_CART,
+  REMOVE_CART,
+  UPDATE_CART_QUANTITY,
+  VERIFY_PAYMENT,
+} from '@/services/url';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 
@@ -65,6 +74,25 @@ export const addCart = createAsyncThunk(
     } catch (err) {
       toast.error(err?.response?.data?.error || somethingWentWrong);
       return thunkAPI.rejectWithValue(err?.response?.data?.statusCode);
+    }
+  }
+);
+
+export const updateItemQuantity = createAsyncThunk(
+  `cart/updateItemQuantity`,
+  async ({ id, quantity }, thunkAPI) => {
+    try {
+      const response = await axiosReact.put(`${UPDATE_CART_QUANTITY}${id}`, {
+        quantity,
+      });
+      return response;
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          somethingWentWrong
+      );
+      return thunkAPI.rejectWithValue(err?.response?.data);
     }
   }
 );
@@ -172,19 +200,19 @@ const cartSlice = createSlice({
       }
     },
     
-    updateItemQuantity: (state, action) => {
+    setLocalItemQuantity: (state, action) => {
       const { id, quantity } = action.payload;
-      const existingItem = state.items.find(item => item.id === id);
-      
+      const existingItem = state.items.find((item) => item.id === id);
+
       if (existingItem) {
         const quantityDifference = quantity - existingItem.quantity;
         existingItem.quantity = quantity;
-        
+
         state.totalQuantity += quantityDifference;
         state.totalAmount += quantityDifference * existingItem.price;
       }
     },
-    
+
     clearCart: (state) => {
       state.items = [];
       state.totalQuantity = 0;
@@ -203,14 +231,35 @@ const cartSlice = createSlice({
         });
         
         builder.addCase(getCart.fulfilled, (state, action) => {
-          state.cartItems = action.payload?.data?.data
+          const cart = action.payload?.data?.data;
+          state.cartItems = cart;
+          state.totalQuantity = Array.isArray(cart?.items)
+            ? cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+            : 0;
           state.cartItemLoading = false;
         });
-        
+
         builder.addCase(getCart.rejected, (state) => {
-          state.cartItems = []
+          state.cartItems = [];
+          state.totalQuantity = 0;
           state.cartItemLoading = false;
         });
+
+        builder.addCase(updateItemQuantity.pending, (state) => {
+          // Keep cart visible; page disables +/- while request is in flight
+        });
+
+        builder.addCase(updateItemQuantity.fulfilled, (state, action) => {
+          const cart = action.payload?.data?.data;
+          if (cart) {
+            state.cartItems = cart;
+            state.totalQuantity = Array.isArray(cart?.items)
+              ? cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+              : 0;
+          }
+        });
+
+        builder.addCase(updateItemQuantity.rejected, () => {});
 
         //cart count
               builder.addCase(getCartCount.pending, (state) => {
@@ -266,9 +315,9 @@ export const {
   addToCart,
   removeFromCart,
   removeItemCompletely,
-  updateItemQuantity,
+  setLocalItemQuantity,
   clearCart,
-  resetPaymentState 
+  resetPaymentState,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

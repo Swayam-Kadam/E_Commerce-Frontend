@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addCart, getCartCount } from '../AddToCart/slice/CartSlice';
 import { getWhishlistCount, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { getProduct } from './slice';
 
@@ -10,10 +10,7 @@ const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const wishlistItems = useSelector((state) => state.wishlist?.items) || [];
-  const isInWishlist = wishlistItems.some(
-    (item) => item.id === product._id || item.id === product.id
-  );
+  const isInWishlist = Boolean(product?.isWishlist);
 
   const handleViewClick = () => {
     navigate(`/product/${product._id}`);
@@ -120,7 +117,10 @@ const ProductCard = ({ product }) => {
   const productImage =
     product?.images?.[0]?.url ||
     'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80';
-  const productCategory = product.category || 'Uncategorized';
+  const productCategory =
+    typeof product.category === 'object' && product.category !== null
+      ? product.category.name || 'Uncategorized'
+      : product.category || 'Uncategorized';
   const productPrice = product.price || 0;
   const productRating = product.rating || product.averageRating || 0;
   const reviewCount = product.reviews?.length || 0;
@@ -158,12 +158,12 @@ const ProductCard = ({ product }) => {
           type="button"
           className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm transition hover:text-rose-500"
           onClick={() => handleWishlist(product._id)}
-          aria-label={isInWishlist || product?.isWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className={`h-5 w-5 ${
-              product?.isWishlist ? 'fill-rose-500 text-rose-500' : 'fill-none'
+              isInWishlist ? 'fill-rose-500 text-rose-500' : 'fill-none'
             }`}
             viewBox="0 0 24 24"
             stroke="currentColor"

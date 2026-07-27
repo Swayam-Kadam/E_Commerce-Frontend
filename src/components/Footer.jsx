@@ -71,7 +71,7 @@ const Footer = () => {
                 </Link>
               </motion.li>
               <motion.li whileHover={{ x: 5 }}>
-                <Link to="/orders" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
+                <Link to="/account" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mr-2 opacity-0 transition-opacity group-hover:opacity-100"></span>
                   Order History
                 </Link>
@@ -83,9 +83,9 @@ const Footer = () => {
                 </Link>
               </motion.li>
               <motion.li whileHover={{ x: 5 }}>
-                <Link to="/newsletter" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
+                <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mr-2 opacity-0 transition-opacity group-hover:opacity-100"></span>
-                  Newsletter
+                  Continue Shopping
                 </Link>
               </motion.li>
             </ul>
@@ -96,25 +96,25 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Company</h3>
             <ul className="space-y-3">
               <motion.li whileHover={{ x: 5 }}>
-                <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
+                <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mr-2 opacity-0 transition-opacity group-hover:opacity-100"></span>
                   About Us
                 </Link>
               </motion.li>
               <motion.li whileHover={{ x: 5 }}>
-                <Link to="/delivery" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
+                <Link to="/cart" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mr-2 opacity-0 transition-opacity group-hover:opacity-100"></span>
-                  Delivery Information
+                  Delivery & Cart
                 </Link>
               </motion.li>
               <motion.li whileHover={{ x: 5 }}>
-                <Link to="/privacy" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
+                <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mr-2 opacity-0 transition-opacity group-hover:opacity-100"></span>
                   Privacy Policy
                 </Link>
               </motion.li>
               <motion.li whileHover={{ x: 5 }}>
-                <Link to="/terms" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
+                <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors text-sm flex items-center">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mr-2 opacity-0 transition-opacity group-hover:opacity-100"></span>
                   Terms & Conditions
                 </Link>
