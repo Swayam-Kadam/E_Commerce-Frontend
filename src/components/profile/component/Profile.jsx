@@ -55,6 +55,8 @@ const AddressTypeTabs = ({ addressType, setAddressType }) => (
   </div>
 );
 
+
+
 const AvatarBlock = ({ src, onClick, memberSince, showCamera = true }) => (
   <div className="flex shrink-0 flex-col items-center">
     <div className="relative">

@@ -365,7 +365,14 @@ const SignupPage = () => {
                   Sign In
                 </Link>
               </p>
+              <p className="text-sm text-gray-600">
+                Back To?{' '}
+                <Link to='/' className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                  Home
+                </Link>
+              </p>
             </motion.div>
+            
           </motion.div>
         </motion.div>
       </div>

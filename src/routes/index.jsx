@@ -16,7 +16,8 @@ import Layout from "./Layout.jsx";
 import { cookieKeys } from "@/services/cookies";
 import Cookies from "js-cookie";
 import AdminLayout from "./AdminLayout";
-import { validateToken, getUserProfile } from "@/components/auth/slice/loginSlice"; // Import these actions
+import { validateToken, getUserProfile } from "@/components/auth/slice/loginSlice";
+import { buildLoginPath } from "@/utils/auth";
 
 const Common = (route) => (
   <Suspense fallback={<PageLoader loadingState />}>
@@ -28,33 +29,15 @@ Common.prototype = {
   component: PropTypes.elementType.isRequired,
 };
 
-const PublicRoute = (route) => {
-  const location = useLocation();
-  
-  if ([routesConstants.LOGIN, routesConstants.SIGNUP].includes(location.pathname)) {
-    return (
-      <Suspense fallback={<PageLoader loadingState />}>
-        <route.component />
-      </Suspense>
-    );
-  }
-  
-  return (
-    <Layout>
-      <Suspense fallback={<PageLoader loadingState />}>
-        <route.component />
-      </Suspense>
-    </Layout>
-  );
-};
+const AuthPage = (route) => (
+  <Suspense fallback={<PageLoader loadingState />}>
+    <route.component />
+  </Suspense>
+);
 
-PublicRoute.prototype = {
-  ...Common.prototype,
-};
-
-const PrivateRoute = (route) => {
+const BrowseRoute = (route) => {
   const { component: Component } = route;
-  
+
   return (
     <Layout>
       <Suspense fallback={<PageLoader loadingState />}>
@@ -64,13 +47,39 @@ const PrivateRoute = (route) => {
   );
 };
 
-PrivateRoute.prototype = {
+BrowseRoute.prototype = {
+  ...Common.prototype,
+};
+
+const AuthRequiredRoute = (route) => {
+  const location = useLocation();
+  const { component: Component } = route;
+  const tokenFromCookies = Cookies.get(cookieKeys?.TOKEN);
+  const isAuthed = !!tokenFromCookies;
+
+  if (!isAuthed) {
+    const redirectTarget = `${location.pathname}${location.search || ""}`;
+    return (
+      <Navigate to={buildLoginPath(redirectTarget)} replace />
+    );
+  }
+
+  return (
+    <Layout>
+      <Suspense fallback={<PageLoader loadingState />}>
+        <Component />
+      </Suspense>
+    </Layout>
+  );
+};
+
+AuthRequiredRoute.prototype = {
   ...Common.prototype,
 };
 
 const AdminRoute = (route) => {
   const { component: Component } = route;
-  
+
   return (
     <AdminLayout>
       <Suspense fallback={<PageLoader loadingState />}>
@@ -85,7 +94,7 @@ const createNestedRoutes = (routes, RouteType) => {
     console.warn('Routes is not defined or not an array:', routes);
     return [];
   }
-  
+
   return routes.map((route, i) => {
     if (!route.component) {
       throw new Error("Component must be required....");
@@ -111,132 +120,92 @@ const createNestedRoutes = (routes, RouteType) => {
 
 const Routes = () => {
   const dispatch = useDispatch();
-  const authState = useSelector((state) => state.auth || {});
   const { userDetail, isAuth, userProfileLoading } = useSelector((state) => state.login || {});
   const location = useLocation();
-  
-  // Check cookies as source of truth
+
   const tokenFromCookies = Cookies.get(cookieKeys?.TOKEN);
   const userFromCookies = Cookies.get(cookieKeys?.USER);
-  
-  // Parse user from cookies if exists
+
   const parsedUserFromCookies = userFromCookies ? JSON.parse(userFromCookies) : null;
-  
-  // Use cookies as primary source, Redux as secondary
   const isAuthenticated = !!tokenFromCookies;
-  
-  // Sync Redux state with cookies on mount and when location changes
+
   useEffect(() => {
     if (tokenFromCookies && !isAuth) {
-      // If cookie exists but Redux says not authenticated, sync it
       dispatch(validateToken());
-      
-      // Also fetch user profile if userDetail is not set
+
       if (!userDetail && parsedUserFromCookies) {
         dispatch(getUserProfile());
       }
     }
   }, [dispatch, tokenFromCookies, isAuth, userDetail, parsedUserFromCookies, location.pathname]);
 
-  // Show loader while auth state is being determined
-  if (userProfileLoading) {
+  if (isAuthenticated && userProfileLoading) {
     return <PageLoader loadingState />;
   }
 
-  // Destructure routes
-  const { 
-    common = [], 
-    private: privateRoutes = [], 
+  const {
+    common = [],
+    private: privateRoutes = [],
     public: publicRoutes = [],
-    admin: adminRoutes = []
+    publicBrowse = [],
+    admin: adminRoutes = [],
   } = routesConfig || {};
-  
-  // Determine user role - prioritize Redux, fall back to cookies
+
   const userRole = userDetail?.role || parsedUserFromCookies?.role;
-  const isAdmin = isAuthenticated && userRole === 'admin';
+  const isAdmin = isAuthenticated && userRole === "admin";
+
+  const authenticatedUserRedirect = (
+    <Navigate
+      to={isAdmin ? routesConstants.ADMIN : routesConstants.HOMEPAGE}
+      replace
+    />
+  );
 
   return (
     <ReactRouterDomRoutes>
-      <Route path="*" element={<_404 />} />
-
-      {/* If NOT authenticated, show public routes */}
-      {!isAuthenticated ? (
+      {isAdmin ? (
         <>
-          <Route 
-            path="/" 
-            element={<Navigate to={routesConstants.LOGIN} replace />} 
-          />
-          
-          {createNestedRoutes(publicRoutes, PublicRoute)}
-          
-          <Route 
-            path="/admin/*" 
-            element={<Navigate to={routesConstants.LOGIN} replace />} 
-          />
-          
-          <Route 
-            path="*" 
-            element={<Navigate to={routesConstants.LOGIN} replace />} 
-          />
+          <Route path="/" element={<Navigate to={routesConstants.ADMIN} replace />} />
+          <Route path={routesConstants.LOGIN} element={authenticatedUserRedirect} />
+          <Route path={routesConstants.SIGNUP} element={authenticatedUserRedirect} />
+          {createNestedRoutes(adminRoutes, AdminRoute)}
+          <Route path="/admin/*" element={<Navigate to={routesConstants.ADMIN} replace />} />
+          <Route path="*" element={<Navigate to={routesConstants.ADMIN} replace />} />
         </>
       ) : (
-        // If authenticated
         <>
-          {/* ADMIN ROUTES */}
-          {isAdmin ? (
-            <>
-              <Route 
-                path="/" 
-                element={<Navigate to="/admin/dashboard" replace />} 
-              />
-              <Route 
-                path={routesConstants.LOGIN} 
-                element={<Navigate to="/admin/dashboard" replace />} 
-              />
-              <Route 
-                path={routesConstants.SIGNUP} 
-                element={<Navigate to="/admin/dashboard" replace />} 
-              />
-              
-              {createNestedRoutes(adminRoutes, AdminRoute)}
-              
-              {/* Admin can also access regular private routes if needed */}
-              {/* {createNestedRoutes(privateRoutes, PrivateRoute)} */}
-              
-              <Route 
-                path="/admin/*" 
-                element={<Navigate to="/admin/dashboard" replace />} 
-              />
-            </>
-          ) : (
-            // REGULAR USER ROUTES
-            <>
-              <Route 
-                path="/" 
-                element={<Navigate to={routesConstants.HOMEPAGE} replace />} 
-              />
-              <Route 
-                path={routesConstants.LOGIN} 
-                element={<Navigate to={routesConstants.HOMEPAGE} replace />} 
-              />
-              <Route 
-                path={routesConstants.SIGNUP} 
-                element={<Navigate to={routesConstants.HOMEPAGE} replace />} 
-              />
-              
-              <Route 
-                path="/admin/*" 
-                element={<Navigate to={routesConstants.HOMEPAGE} replace />} 
-              />
-              
-              {createNestedRoutes(privateRoutes, PrivateRoute)}
-            </>
-          )}
+          {publicRoutes.map((route, i) => (
+            <Route
+              key={`public-${i}`}
+              path={route.path}
+              element={
+                isAuthenticated ? (
+                  authenticatedUserRedirect
+                ) : (
+                  <AuthPage {...route} />
+                )
+              }
+            />
+          ))}
+
+          {createNestedRoutes(publicBrowse, BrowseRoute)}
+          {createNestedRoutes(privateRoutes, AuthRequiredRoute)}
+
+          <Route
+            path="/admin/*"
+            element={
+              isAuthenticated ? (
+                <Navigate to={routesConstants.HOMEPAGE} replace />
+              ) : (
+                <Navigate to={buildLoginPath(location.pathname)} replace />
+              )
+            }
+          />
         </>
       )}
-      
-      {/* COMMON ROUTES (always accessible) */}
+
       {createNestedRoutes(common, Common)}
+      <Route path="*" element={<_404 />} />
     </ReactRouterDomRoutes>
   );
 };

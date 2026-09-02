@@ -1,16 +1,14 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import ProductCard from '../../home/ProductCard';
 import FilterComponent from '../components/FilterComponent';
 import { useDispatch, useSelector } from 'react-redux';
-import { getProduct } from '@/components/home/slice';
+import { fetchCategories } from '@/components/home/slice';
 import PageLoader from '@/components/common/PageLoader';
+import InfiniteProductGrid from '@/components/common/InfiniteProductGrid';
+import useInfiniteProducts from '@/hooks/useInfiniteProducts';
 import { FiChevronRight, FiSliders } from 'react-icons/fi';
-import {
-  categoriesFromProducts,
-  matchesCategory,
-} from '@/utils/category';
+import { matchesCategory } from '@/utils/category';
 
 const defaultFilters = {
   priceRange: [0, 10000],
@@ -25,24 +23,52 @@ const MainCategory = () => {
     ? decodeURIComponent(rawCategoryName)
     : 'All';
   const [searchParams] = useSearchParams();
-  const searchQuery = (searchParams.get('search') || '').trim().toLowerCase();
+  const searchQuery = (searchParams.get('search') || '').trim();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [filters, setFilters] = useState(defaultFilters);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  const { categories = [] } = useSelector((state) => state.home || {});
+
   useEffect(() => {
-    dispatch(getProduct());
+    dispatch(fetchCategories());
   }, [dispatch]);
 
-  const { productList = [], productListLoading = false } = useSelector(
-    (state) => state.home || {}
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }, [categoryName, searchQuery]);
+
+  const filterParams = useMemo(
+    () => ({
+      category: categoryName !== 'All' ? categoryName : undefined,
+      search: searchQuery || undefined,
+      minPrice: filters.priceRange[0] > 0 ? filters.priceRange[0] : undefined,
+      maxPrice:
+        filters.priceRange[1] < 10000 ? filters.priceRange[1] : undefined,
+      rating: filters.rating > 0 ? filters.rating : undefined,
+      inStock: filters.inStock || undefined,
+      isBestSeller: filters.isBestSeller || undefined,
+    }),
+    [categoryName, searchQuery, filters]
   );
 
-  const categories = useMemo(() => {
-    return ['All', ...categoriesFromProducts(productList)];
-  }, [productList]);
+  const {
+    products,
+    loading,
+    loadingMore,
+    hasMore,
+    total,
+    sentinelRef,
+  } = useInfiniteProducts(filterParams);
+
+  const categoryTabs = useMemo(() => {
+    const names = categories.map((c) => c.name).filter(Boolean);
+    return ['All', ...names];
+  }, [categories]);
 
   const hasActiveFilters =
     filters.priceRange[0] > 0 ||
@@ -51,45 +77,6 @@ const MainCategory = () => {
     filters.inStock ||
     filters.isBestSeller ||
     Boolean(searchQuery);
-
-  useEffect(() => {
-    let result = [...productList];
-
-    if (categoryName && categoryName !== 'All') {
-      result = result.filter((product) =>
-        matchesCategory(product.category, categoryName)
-      );
-    }
-
-    if (searchQuery) {
-      result = result.filter((product) => {
-        const name = String(product.name || '').toLowerCase();
-        const description = String(product.description || '').toLowerCase();
-        const category = String(product.category || '').toLowerCase();
-        return (
-          name.includes(searchQuery) ||
-          description.includes(searchQuery) ||
-          category.includes(searchQuery)
-        );
-      });
-    }
-
-    result = result.filter((product) => {
-      const hasStock = product.stock > 0;
-      const price = product.price || 0;
-      const rating = product.averageRating || 0;
-
-      const priceMatch =
-        price >= filters.priceRange[0] && price <= filters.priceRange[1];
-      const ratingMatch = rating >= filters.rating;
-      const stockMatch = !filters.inStock || hasStock;
-      const bestSellerMatch = !filters.isBestSeller || product.isBestSeller;
-
-      return priceMatch && ratingMatch && stockMatch && bestSellerMatch;
-    });
-
-    setFilteredProducts(result);
-  }, [categoryName, filters, productList, searchQuery]);
 
   const handleCategoryChange = (category) => {
     const params = searchQuery
@@ -107,7 +94,7 @@ const MainCategory = () => {
   const title =
     !categoryName || categoryName === 'All' ? 'All Products' : categoryName;
 
-  if (productListLoading && productList.length === 0) {
+  if (loading && products.length === 0) {
     return <PageLoader loadingState />;
   }
 
@@ -147,7 +134,7 @@ const MainCategory = () => {
 
         <div className="mb-8 overflow-x-auto border-b border-slate-200">
           <div className="flex min-w-max gap-1 sm:gap-2">
-            {categories.map((category) => {
+            {categoryTabs.map((category) => {
               const isActive =
                 (category === 'All' &&
                   (!categoryName || categoryName === 'All')) ||
@@ -181,8 +168,7 @@ const MainCategory = () => {
 
         <div className="mb-4 flex items-center justify-between md:hidden">
           <p className="text-sm text-slate-500">
-            {filteredProducts.length}{' '}
-            {filteredProducts.length === 1 ? 'product' : 'products'}
+            {total} {total === 1 ? 'product' : 'products'}
           </p>
           <button
             type="button"
@@ -207,10 +193,8 @@ const MainCategory = () => {
             <div className="mb-6 hidden items-center justify-between md:flex">
               <p className="text-sm text-slate-500">
                 Showing{' '}
-                <span className="font-semibold text-slate-800">
-                  {filteredProducts.length}
-                </span>{' '}
-                {filteredProducts.length === 1 ? 'product' : 'products'}
+                <span className="font-semibold text-slate-800">{total}</span>{' '}
+                {total === 1 ? 'product' : 'products'}
               </p>
 
               {hasActiveFilters && (
@@ -224,26 +208,16 @@ const MainCategory = () => {
               )}
             </div>
 
-            {filteredProducts.length > 0 ? (
-              <motion.div
-                className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                key={`${categoryName}-${filteredProducts.length}`}
-              >
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </motion.div>
-            ) : (
-              <div className="border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
-                <p className="font-display text-xl font-bold text-slate-900">
-                  No products found
-                </p>
-                <p className="mt-2 text-slate-500">
-                  Nothing matches your current filters. Try widening the range.
-                </p>
+            <InfiniteProductGrid
+              products={products}
+              loading={loading}
+              loadingMore={loadingMore}
+              hasMore={hasMore}
+              sentinelRef={sentinelRef}
+              gridClassName="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+              emptyMessage="No products found"
+              emptyDescription="Nothing matches your current filters. Try widening the range."
+              emptyAction={
                 <button
                   type="button"
                   className="mt-6 bg-[#0289de] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0169ab]"
@@ -251,8 +225,8 @@ const MainCategory = () => {
                 >
                   Reset All Filters
                 </button>
-              </div>
-            )}
+              }
+            />
           </div>
         </div>
       </div>

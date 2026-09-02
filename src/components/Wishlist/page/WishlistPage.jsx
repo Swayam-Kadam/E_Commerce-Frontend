@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  removeFromWishlist,
   getAllWhishlist,
   toggleWhishlist,
   getWhishlistCount,
   clearWhishlist,
+  removeWishlistProductFromList,
+  clearWishlistProductsList,
 } from '../slice/WishlistSlice';
 import { addCart, getCartCount } from '../../AddToCart/slice/CartSlice';
+import { updateProductInteraction } from '../../home/slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import PageLoader from '@/components/common/PageLoader';
@@ -20,36 +22,69 @@ const FALLBACK_IMAGE =
 const WishlistPage = () => {
   const dispatch = useDispatch();
   const { allWhishlistData, allWhishlistLoading } = useSelector((state) => ({
-    allWhishlistData: state?.wishlist?.allWhishlistData?.data?.data?.products,
+    allWhishlistData: state?.wishlist?.allWhishlistData,
     allWhishlistLoading: state?.wishlist?.allWhishlistLoading,
   }));
+
+  const allWhishlistProducts = allWhishlistData?.data?.data?.products;
+  const [pendingIds, setPendingIds] = useState(new Set());
+  const [movingId, setMovingId] = useState(null);
 
   useEffect(() => {
     dispatch(getAllWhishlist());
   }, [dispatch]);
 
-  const removeFromWishlistHandler = (id) => {
-    dispatch(removeFromWishlist(id));
-    dispatch(toggleWhishlist({ productId: id })).then((res) => {
-      if (res?.payload?.status === 200 || res?.payload?.status === 201) {
-        toast.success('Wishlist removed successfully');
-        dispatch(getWhishlistCount());
-        dispatch(getAllWhishlist());
-      }
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth', // smooth scrolling to top
     });
+  }, []);
+
+  const setPending = (id, isPending) => {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      if (isPending) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const removeFromWishlistHandler = (id) => {
+    if (pendingIds.has(id)) return;
+
+    setPending(id, true);
+    dispatch(removeWishlistProductFromList(id));
+
+    dispatch(toggleWhishlist({ productId: id }))
+      .then((res) => {
+        if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+          dispatch(
+            updateProductInteraction({ productId: id, isWishlist: false })
+          );
+          dispatch(getWhishlistCount());
+          toast.success('Wishlist removed successfully');
+        } else {
+          dispatch(getAllWhishlist());
+        }
+      })
+      .catch(() => {
+        dispatch(getAllWhishlist());
+        toast.error('Could not remove from wishlist');
+      })
+      .finally(() => setPending(id, false));
   };
 
   const moveToCart = (item) => {
     const productId = item._id || item.id;
-    if (!productId) {
-      toast.error('Invalid product');
-      return;
-    }
+    if (!productId || movingId === productId) return;
 
     if (!item.stock || item.stock === 0) {
       toast.error('Product is out of stock');
       return;
     }
+
+    setMovingId(productId);
 
     dispatch(
       addCart({
@@ -60,31 +95,67 @@ const WishlistPage = () => {
         },
         quantity: 1,
       })
-    ).then((res) => {
-      if (res?.payload?.status === 200 || res?.payload?.status === 201) {
-        dispatch(getCartCount());
-        toast.success('Moved to cart successfully');
-        dispatch(toggleWhishlist({ productId })).then(() => {
-          dispatch(getWhishlistCount());
-          dispatch(getAllWhishlist());
-        });
-      }
-    });
+    )
+      .then((res) => {
+        if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+          dispatch(getCartCount());
+          dispatch(
+            updateProductInteraction({
+              productId,
+              isWishlist: false,
+              cartInfo: {
+                inCart: true,
+                cartItemId: null,
+                quantity: 1,
+                variant: {},
+              },
+            })
+          );
+          toast.success('Moved to cart successfully');
+
+          return dispatch(toggleWhishlist({ productId })).then((toggleRes) => {
+            if (
+              toggleRes?.payload?.status === 200 ||
+              toggleRes?.payload?.status === 201
+            ) {
+              dispatch(removeWishlistProductFromList(productId));
+              dispatch(getWhishlistCount());
+            } else {
+              dispatch(getAllWhishlist());
+            }
+          });
+        }
+        toast.error('Failed to add to cart');
+      })
+      .catch(() => {
+        toast.error('Failed to add to cart');
+      })
+      .finally(() => setMovingId(null));
   };
 
   const clearWishlistHandler = () => {
-    dispatch(clearWhishlist()).then((res) => {
-      if (res?.payload?.status === 200 || res?.payload?.status === 201) {
-        toast.warning('Wishlist cleared successfully');
+    dispatch(clearWishlistProductsList());
+
+    dispatch(clearWhishlist())
+      .then((res) => {
+        if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+          toast.warning('Wishlist cleared successfully');
+          dispatch(getWhishlistCount());
+        } else {
+          dispatch(getAllWhishlist());
+        }
+      })
+      .catch(() => {
         dispatch(getAllWhishlist());
-        dispatch(getWhishlistCount());
-      }
-    });
+        toast.error('Could not clear wishlist');
+      });
   };
 
-  const itemCount = allWhishlistData?.length || 0;
+  const itemCount = allWhishlistProducts?.length || 0;
+  const isInitialLoad =
+    allWhishlistLoading && allWhishlistData?.data?.data === undefined;
 
-  if (allWhishlistLoading) {
+  if (isInitialLoad) {
     return <PageLoader loadingState />;
   }
 
@@ -150,18 +221,22 @@ const WishlistPage = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <AnimatePresence>
-              {allWhishlistData?.map((item, index) => {
+            <AnimatePresence mode="popLayout">
+              {allWhishlistProducts?.map((item, index) => {
+                const productId = item._id || item.id;
                 const outOfStock = item.stock < 1;
                 const inCart = item?.cartInfo?.inCart;
+                const isPending = pendingIds.has(productId);
+                const isMoving = movingId === productId;
 
                 return (
                   <motion.article
-                    key={item._id || item.id}
+                    key={productId}
+                    layout
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    transition={{ duration: 0.3, delay: index * 0.03 }}
                     className="group flex flex-col overflow-hidden border border-slate-100 bg-white transition hover:-translate-y-1 hover:border-sky-100 hover:shadow-[0_20px_40px_-24px_rgba(2,137,222,0.45)]"
                   >
                     <div className="relative overflow-hidden bg-slate-50">
@@ -176,8 +251,9 @@ const WishlistPage = () => {
 
                       <button
                         type="button"
-                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center bg-white/95 text-rose-500 shadow-sm transition hover:bg-rose-50"
-                        onClick={() => removeFromWishlistHandler(item._id)}
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center bg-white/95 text-rose-500 shadow-sm transition hover:bg-rose-50 disabled:opacity-50"
+                        onClick={() => removeFromWishlistHandler(productId)}
+                        disabled={isPending || isMoving}
                         aria-label="Remove from wishlist"
                       >
                         <svg
@@ -221,21 +297,23 @@ const WishlistPage = () => {
                           type="button"
                           className="flex-1 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed"
                           onClick={() => !outOfStock && moveToCart(item)}
-                          disabled={outOfStock || inCart}
+                          disabled={outOfStock || inCart || isMoving || isPending}
                           style={{
                             backgroundColor:
                               outOfStock || inCart ? '#94a3b8' : '#0289de',
                           }}
                         >
-                          {outOfStock
-                            ? 'Out of Stock'
-                            : inCart
-                              ? 'In Cart'
-                              : 'Add To Cart'}
+                          {isMoving
+                            ? 'Adding...'
+                            : outOfStock
+                              ? 'Out of Stock'
+                              : inCart
+                                ? 'In Cart'
+                                : 'Add To Cart'}
                         </button>
 
                         <Link
-                          to={`/product/${item._id}`}
+                          to={`/product/${productId}`}
                           className="border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                         >
                           View

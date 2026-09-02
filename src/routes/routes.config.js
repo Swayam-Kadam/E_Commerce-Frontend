@@ -27,42 +27,39 @@ const routesConfig = {
       component: SIGNUP,
     },
   ],
-  
-  private: [
+  publicBrowse: [
     {
       index: true,
       component: HOMEPAGE,
-      allowedRoles: ['user']
     },
     {
       path: routesConstants.PRODUCT_DETAIL,
       component: SELECTEDPRODUCT,
-      allowedRoles: ['user']
     },
     {
       path: routesConstants.CATEGORY,
       component: CATEGORY,
-      allowedRoles: ['user']
     },
     {
       path: routesConstants.CATEGORY_WITH_NAME,
       component: CATEGORY,
-      allowedRoles: ['user']
     },
+  ],
+  private: [
     {
       path: routesConstants.WISHLIST,
       component: WISHLIST,
-      allowedRoles: ['user']
+      allowedRoles: ['user'],
     },
     {
       path: routesConstants.CART,
       component: ADDTOCART,
-      allowedRoles: ['user']
+      allowedRoles: ['user'],
     },
     {
       path: routesConstants.PROFILE,
       component: ACCOUNT,
-      allowedRoles: ['user']
+      allowedRoles: ['user'],
     },
   ],
   admin: [ {
@@ -70,7 +67,6 @@ const routesConfig = {
       component: ADMIN,
       allowedRoles: ['admin'],
     },
-      // children: [
         {
           path: routesConstants.ADMIN_ADD_PRODUCT,
           component: ADDPRODUCT,
@@ -86,11 +82,7 @@ const routesConfig = {
           component: MANAGEPRODUCT,
           allowedRoles: ['admin'],
         },
-      // ],
-    // },
   ],
 };
 
 export default routesConfig;
-
-

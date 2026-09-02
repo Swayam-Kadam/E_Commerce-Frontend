@@ -14,6 +14,7 @@ import { getUserProfile, logout, postLogout } from './auth/slice/loginSlice';
 import { toast } from 'react-toastify';
 import { getWhishlistCount } from './Wishlist/slice/WishlistSlice';
 import { getCartCount } from './AddToCart/slice/CartSlice';
+import { buildLoginPath, isAuthenticated } from '@/utils/auth';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -23,6 +24,12 @@ const Navbar = () => {
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const { userDetail } = useSelector((state) => state.login);
+
+  const isLoggedIn = isAuthenticated();
+  const isUser = isLoggedIn && userDetail?.role === 'user';
+  const isAdminUser = isLoggedIn && userDetail?.role === 'admin';
+  const isGuest = !isLoggedIn;
+  const showStorefrontNav = isGuest || isUser;
 
   const {
     userProfile,
@@ -37,12 +44,13 @@ const Navbar = () => {
   }));
 
   useEffect(() => {
+    if (!isLoggedIn) return;
     if (!userProfileFetched) {
       dispatch(getUserProfile());
       dispatch(getWhishlistCount());
       dispatch(getCartCount());
     }
-  }, [dispatch, userProfileFetched]);
+  }, [dispatch, userProfileFetched, isLoggedIn]);
 
   const handleLogout = async () => {
   try {
@@ -209,7 +217,7 @@ const Navbar = () => {
   return (
     <>
       {/* Top Navigation Bar - Desktop Only */}
-      {userDetail.role === 'user' &&
+      {showStorefrontNav &&
         <div className="hidden md:block bg-gray-100 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-10">
@@ -221,7 +229,7 @@ const Navbar = () => {
 
             {/* Right side - Account links */}
             <div className="flex items-center space-x-4">
-              {userDetail ? (
+              {isUser ? (
                 <>
                   <Link to="/wishlist" className="text-sm text-gray-600 hover:text-[#0289de] flex items-center">
                     <FiHeart className="mr-1" /> Wishlist
@@ -258,7 +266,7 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo - Mobile & Desktop */}
-            <Link to={userDetail.role === 'user' ? '/' : '/admin'} className="hidden md:flex items-center">
+            <Link to={isAdminUser ? '/admin' : '/'} className="hidden md:flex items-center">
               <div className="w-12 h-12 rounded-lg flex items-center justify-center mr-2">
                 <img 
                   src="/images/png/logo.png" 
@@ -268,7 +276,7 @@ const Navbar = () => {
               </div>
             </Link>
 
-            {userDetail.role === 'admin' &&
+            {isAdminUser &&
               <div className="hidden md:flex flex-1 max-w-2xl mx-8 gap-2 justify-center">
                 <Link to={routesConstants.ADMIN} className="hidden md:flex items-center bg-[#0289de] p-1 rounded-[5px] hover:bg-[#429ed8] text-white hover:text-black">
                 Dashboard
@@ -285,7 +293,7 @@ const Navbar = () => {
               </div>
             }
 
-            {userDetail.role === 'admin' &&
+            {isAdminUser &&
              
                 <div className="hidden md:flex items-center ml-4 relative group cursor-pointer "
                 onClick={()=>hoveredItem==='profile'?setHoveredItem(null) : setHoveredItem('profile')}>
@@ -304,7 +312,7 @@ const Navbar = () => {
             }
 
             {/* Search Bar - Desktop Only */}
-            {userDetail.role === "user" &&
+            {showStorefrontNav &&
               <div className="hidden md:flex flex-1 max-w-2xl mx-8">
               <form onSubmit={handleSearch} className="flex w-full">
                 <input
@@ -325,23 +333,27 @@ const Navbar = () => {
             }
 
             {/* Cart & Actions - Desktop */}
-            {userDetail.role === "user" &&
+            {showStorefrontNav &&
               <div className="hidden md:flex items-center space-x-6">
-              <Link to="/wishlist" className="text-gray-700 hover:text-[#0289de] relative">
+              <Link to={isUser ? '/wishlist' : buildLoginPath('/wishlist')} className="text-gray-700 hover:text-[#0289de] relative">
                 <FiHeart className="h-6 w-6" />
+                {isUser && (
                 <span className="absolute -top-2 -right-2 bg-[#0289de] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {whishlistCount}
                 </span>
+                )}
               </Link>
               
-              <Link to="/cart" className="text-gray-700 hover:text-[#0289de] relative flex items-center">
+              <Link to={isUser ? '/cart' : buildLoginPath('/cart')} className="text-gray-700 hover:text-[#0289de] relative flex items-center">
                 <TiShoppingCart className="h-6 w-6" />
+                {isUser && (
                 <span className="absolute -top-2 -right-2 bg-[#0289de] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
+                )}
               </Link>
 
-              {userDetail && (
+              {isUser && (
                 <div className="flex items-center ml-4 relative group cursor-pointer "
                 onClick={()=>hoveredItem==='profile'?setHoveredItem(null) : setHoveredItem('profile')}>
                   <div className="w-8 h-8 bg-[#0289de] rounded-full flex items-center justify-center border border-[#0289de] hover:border-blue-900">
@@ -378,16 +390,18 @@ const Navbar = () => {
               </div>
               </Link>
               
-             {userDetail.role === "user"&&
-              <Link to="/cart" className="text-gray-700 relative">
+             {showStorefrontNav &&
+              <Link to={isUser ? '/cart' : buildLoginPath('/cart')} className="text-gray-700 relative">
                 <TiShoppingCart className="h-6 w-6" />
+                {isUser && (
                 <span className="absolute -top-2 -right-2 bg-[#0289de] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
+                )}
               </Link>
               }
 
-             {userDetail.role === "admin"&&
+             {isAdminUser &&
                <div className="flex items-center ml-4 relative group cursor-pointer "
                 onClick={()=>hoveredItem==='profile'?setHoveredItem(null) : setHoveredItem('profile')}>
                   <div className="w-8 h-8 bg-[#0289de] rounded-full flex items-center justify-center border border-[#0289de] hover:border-blue-900">
@@ -407,7 +421,7 @@ const Navbar = () => {
           </div>
 
           {/* Secondary Navigation - Desktop Only */}
-         {userDetail.role === "user" &&
+         {showStorefrontNav &&
           <div className="hidden md:flex justify-center items-center h-12 border-t border-gray-200">
             <div className="flex items-center justify-evenly space-x-8">
               <div 
@@ -533,7 +547,7 @@ const Navbar = () => {
             >
               {/* Mobile Search */}
               <div className="px-4 py-3 border-b border-gray-200">
-                <form onSubmit={handleSearch} className={userDetail.role==='user'?"flex":"hidden md:flex"}>
+                <form onSubmit={handleSearch} className={showStorefrontNav ? "flex" : "hidden md:flex"}>
                   <input
                     type="text"
                     placeholder="Search..."
@@ -551,7 +565,7 @@ const Navbar = () => {
               </div>
 
               <div className="px-2 pt-2 pb-3 space-y-1">
-                {userDetail.role === 'user' &&
+                {showStorefrontNav &&
                 <>
                 <Link
                   to="/category/fashion"
@@ -595,7 +609,7 @@ const Navbar = () => {
                 </>
                 }
 
-                {userDetail.role === 'admin' &&
+                {isAdminUser &&
                 <>
                 <Link
                   to="/admin"
@@ -631,7 +645,7 @@ const Navbar = () => {
                 </>
                 }
 
-                {userDetail ? (
+                {isUser ? (
                   <div className="pt-4 pb-3 border-t border-gray-200 text-center">
                     
                     <button

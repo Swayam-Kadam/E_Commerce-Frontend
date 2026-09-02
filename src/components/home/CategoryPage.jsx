@@ -2,8 +2,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { getProduct } from './slice/index';
-import { categoriesFromProducts } from '@/utils/category';
+import { fetchCategories } from './slice/index';
 
 const CATEGORY_META = {
   Fashion: { image: '/images/png/fashion.png', tint: 'from-rose-100 to-rose-50' },
@@ -25,28 +24,26 @@ const FALLBACK_META = {
 
 const CategoryPage = () => {
   const dispatch = useDispatch();
-  const { productList = [] } = useSelector((state) => state.home || {});
+  const { categories = [] } = useSelector((state) => state.home || {});
 
   useEffect(() => {
-    if (!productList.length) {
-      dispatch(getProduct());
+    if (!categories.length) {
+      dispatch(fetchCategories());
     }
-  }, [dispatch, productList.length]);
+  }, [dispatch, categories.length]);
 
-  const categories = useMemo(() => {
-    const names = categoriesFromProducts(productList);
-    if (names.length) {
-      return names.map((name) => ({
-        name,
-        ...(CATEGORY_META[name] || FALLBACK_META),
+  const categoryTiles = useMemo(() => {
+    if (categories.length) {
+      return categories.map((category) => ({
+        name: category.name,
+        ...(CATEGORY_META[category.name] || FALLBACK_META),
       }));
     }
-    // Fallback tiles while products load / if empty
     return Object.entries(CATEGORY_META).map(([name, meta]) => ({
       name,
       ...meta,
     }));
-  }, [productList]);
+  }, [categories]);
 
   return (
     <section
@@ -70,7 +67,7 @@ const CategoryPage = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-4 sm:gap-6 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-          {categories.map((category, index) => (
+          {categoryTiles.map((category, index) => (
             <motion.div
               key={category.name}
               initial={{ opacity: 0, y: 16 }}

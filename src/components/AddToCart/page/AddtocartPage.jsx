@@ -56,6 +56,9 @@ const AddtocartPage = () => {
 
   const productItem = cartItems?.items;
   const itemCount = productItem?.length || 0;
+  const isInitialCartLoad =
+    cartItemLoading &&
+    (Array.isArray(cartItems) || cartItems?.items === undefined);
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [addressType, setAddressType] = useState('home');
@@ -105,6 +108,13 @@ const AddtocartPage = () => {
       setAddressType(preferred.type);
     }
   }, [profileAddresses]);
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth', // smooth scrolling to top
+    });
+  }, []);
 
   const loadRazorpayScript = async () => {
     if (window.Razorpay) {
@@ -255,7 +265,6 @@ const AddtocartPage = () => {
     dispatch(removeCart(id)).then((res) => {
       if (res?.payload?.status === 200 || res?.payload?.status === 201) {
         toast.success('Cart item removed successfully');
-        dispatch(getCart());
         dispatch(getCartCount());
       }
     });
@@ -265,7 +274,6 @@ const AddtocartPage = () => {
     dispatch(cleaAllCart()).then((res) => {
       if (res?.payload?.status === 200 || res?.payload?.status === 201) {
         toast.success('Cart cleared successfully');
-        dispatch(getCart());
         dispatch(getCartCount());
       }
     });
@@ -276,10 +284,13 @@ const AddtocartPage = () => {
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
 
+  if (isInitialCartLoad) {
+    return <PageLoader loadingState />;
+  }
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef5fb_0%,#ffffff_28%,#ffffff_100%)]">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        {cartItemLoading && <PageLoader />}
 
         <motion.header
           className="mb-8 md:mb-10"
@@ -325,10 +336,11 @@ const AddtocartPage = () => {
         ) : (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <AnimatePresence>
+              <AnimatePresence mode="popLayout">
                 {productItem?.map((item, index) => (
                   <motion.article
                     key={item._id || item.id}
+                    layout
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -40 }}
@@ -528,7 +540,7 @@ const AddtocartPage = () => {
                 disabled={
                   checkoutLoading ||
                   paymentLoading ||
-                  cartItemLoading ||
+                  isInitialCartLoad ||
                   !shippingAddressPayload
                 }
               >

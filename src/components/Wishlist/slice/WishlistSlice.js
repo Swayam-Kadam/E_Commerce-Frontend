@@ -100,14 +100,29 @@ const wishlistSlice = createSlice({
     
     clearWishlist: (state) => {
       state.items = [];
-      state.totalWishlistQuantity = 0
+      state.totalWishlistQuantity = 0;
+    },
+    removeWishlistProductFromList: (state, action) => {
+      const productId = action.payload;
+      const products = state.allWhishlistData?.data?.data?.products;
+      if (!Array.isArray(products)) return;
+      state.allWhishlistData.data.data.products = products.filter(
+        (p) => p._id !== productId && p.id !== productId
+      );
+    },
+    clearWishlistProductsList: (state) => {
+      if (state.allWhishlistData?.data?.data) {
+        state.allWhishlistData.data.data.products = [];
+      }
     },
   },
   extraReducers: (builder) => {
       // Get all products
       builder.addCase(getAllWhishlist.pending, (state) => {
-        state.allWhishlistData = []
-        state.allWhishlistLoading = true;
+        const hasData = state.allWhishlistData?.data?.data !== undefined;
+        if (!hasData) {
+          state.allWhishlistLoading = true;
+        }
       });
       
       builder.addCase(getAllWhishlist.fulfilled, (state, action) => {
@@ -116,8 +131,13 @@ const wishlistSlice = createSlice({
       });
       
       builder.addCase(getAllWhishlist.rejected, (state) => {
-        state.allWhishlistData = []
         state.allWhishlistLoading = false;
+      });
+
+      builder.addCase(clearWhishlist.fulfilled, (state) => {
+        if (state.allWhishlistData?.data?.data) {
+          state.allWhishlistData.data.data.products = [];
+        }
       });
 
       //whishlist count
@@ -144,6 +164,8 @@ export const {
   removeFromWishlist,
   moveToCart,
   clearWishlist,
+  removeWishlistProductFromList,
+  clearWishlistProductsList,
 } = wishlistSlice.actions;
 
 export default wishlistSlice.reducer;

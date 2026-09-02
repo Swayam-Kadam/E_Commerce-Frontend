@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiPackage, FiSettings, FiHeart } from 'react-icons/fi';
 import Profile from './component/Profile';
@@ -15,6 +15,13 @@ const tabs = [
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth', // smooth scrolling to top
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef5fb_0%,#ffffff_32%,#ffffff_100%)]">

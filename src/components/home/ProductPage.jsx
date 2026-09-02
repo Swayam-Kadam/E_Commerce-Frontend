@@ -1,36 +1,44 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import ProductCard from './ProductCard';
 import { useDispatch, useSelector } from 'react-redux';
-import { getProduct } from './slice/index';
+import { fetchCategories } from './slice/index';
 import PageLoader from '../common/PageLoader';
-import { categoriesFromProducts, matchesCategory } from '@/utils/category';
+import InfiniteProductGrid from '../common/InfiniteProductGrid';
+import useInfiniteProducts from '@/hooks/useInfiniteProducts';
 
 const ProductPage = () => {
   const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const { productList, productListLoading } = useSelector(
-    (state) => state.home || { productList: [], productListLoading: false }
+  const { categories = [], categoriesLoading = false } = useSelector(
+    (state) => state.home || {}
   );
+
+  const filterParams = useMemo(
+    () => ({
+      category: selectedCategory !== 'All' ? selectedCategory : undefined,
+    }),
+    [selectedCategory]
+  );
+
+  const {
+    products,
+    loading,
+    loadingMore,
+    hasMore,
+    sentinelRef,
+  } = useInfiniteProducts(filterParams);
 
   useEffect(() => {
-    dispatch(getProduct());
+    dispatch(fetchCategories());
   }, [dispatch]);
 
-  const categories = useMemo(
-    () => ['All', ...categoriesFromProducts(productList)],
-    [productList]
-  );
+  const categoryTabs = useMemo(() => {
+    const names = categories.map((c) => c.name).filter(Boolean);
+    return ['All', ...names];
+  }, [categories]);
 
-  const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'All') return productList;
-    return productList.filter((product) =>
-      matchesCategory(product.category, selectedCategory)
-    );
-  }, [productList, selectedCategory]);
-
-  if (productListLoading) {
+  if ((loading || categoriesLoading) && products.length === 0) {
     return <PageLoader loadingState />;
   }
 
@@ -54,7 +62,7 @@ const ProductPage = () => {
           </div>
 
           <div className="flex flex-wrap gap-2 md:gap-3">
-            {categories.map((category) => {
+            {categoryTabs.map((category) => {
               const isActive = selectedCategory === category;
               return (
                 <button
@@ -81,28 +89,15 @@ const ProductPage = () => {
           </div>
         </div>
 
-        <motion.div
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          key={selectedCategory}
-        >
-          {filteredProducts.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))}
-        </motion.div>
-
-        {filteredProducts.length === 0 && (
-          <div className="py-16 text-center">
-            <p className="font-display text-xl font-semibold text-slate-800">
-              Nothing here yet
-            </p>
-            <p className="mt-2 text-slate-500">
-              No products found in this category.
-            </p>
-          </div>
-        )}
+        <InfiniteProductGrid
+          products={products}
+          loading={loading}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
+          sentinelRef={sentinelRef}
+          emptyMessage="Nothing here yet"
+          emptyDescription="No products found in this category."
+        />
       </div>
     </section>
   );

@@ -1,24 +1,40 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { addCart, getCartCount } from '../AddToCart/slice/CartSlice';
 import { getWhishlistCount, toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { getProduct } from './slice';
+import { updateProductInteraction } from './slice';
+import { buildLoginPath, isAuthenticated } from '@/utils/auth';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
 
-  const isInWishlist = Boolean(product?.isWishlist);
+  const [wishlistPending, setWishlistPending] = useState(false);
+  const [cartPending, setCartPending] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(Boolean(product?.isWishlist));
+  const [inCart, setInCart] = useState(Boolean(product?.cartInfo?.inCart));
+
+  useEffect(() => {
+    setIsInWishlist(Boolean(product?.isWishlist));
+    setInCart(Boolean(product?.cartInfo?.inCart));
+  }, [product?._id, product?.isWishlist, product?.cartInfo?.inCart]);
 
   const handleViewClick = () => {
     navigate(`/product/${product._id}`);
   };
 
-  const handleAddToCart = (product) => {
-    if (!product || !product._id) {
-      toast.error('Invalid product');
+  const handleAddToCart = (e) => {
+    e?.stopPropagation?.();
+    if (!product || !product._id || cartPending || inCart) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      toast.info('Please log in to add items to your cart.');
+      navigate(buildLoginPath(`${location.pathname}${location.search || ''}`));
       return;
     }
 
@@ -30,41 +46,84 @@ const ProductCard = ({ product }) => {
     const payload = {
       productId: product._id,
       variant: {
-        color: product?.variants?.color || null,
-        size: product?.variants?.size || null,
+        color: product?.variants?.[0]?.color?.[0] || null,
+        size: product?.variants?.[0]?.size?.[0] || null,
       },
       quantity: 1,
     };
 
+    setCartPending(true);
     dispatch(addCart(payload))
       .then((res) => {
         if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+          setInCart(true);
+          dispatch(
+            updateProductInteraction({
+              productId: product._id,
+              cartInfo: {
+                inCart: true,
+                cartItemId: null,
+                quantity: 1,
+                variant: payload.variant,
+              },
+            })
+          );
           dispatch(getCartCount());
           toast.success('Product added to cart successfully!');
-          dispatch(getProduct());
         } else {
           toast.error('Failed to add to cart');
         }
       })
       .catch(() => {
         toast.error('Failed to add to cart. Please try again.');
-      });
+      })
+      .finally(() => setCartPending(false));
   };
 
-  const handleWishlist = (id) => {
-    const payload = { productId: id };
-    dispatch(toggleWhishlist(payload)).then((res) => {
-      if (res?.payload?.status === 200 || res?.payload?.status === 201) {
-        dispatch(getWhishlistCount());
-        if (res?.payload?.data?.action === 'added') {
-          toast.success('Wishlist Added Successfully');
-          dispatch(getProduct());
-        } else if (res?.payload?.data?.action === 'removed') {
-          toast.warning('Wishlist Removed Successfully');
-          dispatch(getProduct());
+  const handleWishlist = (e, id) => {
+    e?.stopPropagation?.();
+    if (wishlistPending) return;
+
+    if (!isAuthenticated()) {
+      toast.info('Please log in to manage your wishlist.');
+      navigate(buildLoginPath(`${location.pathname}${location.search || ''}`));
+      return;
+    }
+
+    const nextWishlist = !isInWishlist;
+    setWishlistPending(true);
+    setIsInWishlist(nextWishlist);
+
+    dispatch(toggleWhishlist({ productId: id }))
+      .then((res) => {
+        if (res?.payload?.status === 200 || res?.payload?.status === 201) {
+          const action = res?.payload?.data?.action;
+          const confirmed =
+            action === 'added' ? true : action === 'removed' ? false : nextWishlist;
+
+          setIsInWishlist(confirmed);
+          dispatch(
+            updateProductInteraction({
+              productId: id,
+              isWishlist: confirmed,
+            })
+          );
+          dispatch(getWhishlistCount());
+
+          if (action === 'added') {
+            toast.success('Wishlist Added Successfully');
+          } else if (action === 'removed') {
+            toast.warning('Wishlist Removed Successfully');
+          }
+        } else {
+          setIsInWishlist(!nextWishlist);
         }
-      }
-    });
+      })
+      .catch(() => {
+        setIsInWishlist(!nextWishlist);
+        toast.error('Could not update wishlist');
+      })
+      .finally(() => setWishlistPending(false));
   };
 
   const colors =
@@ -125,7 +184,6 @@ const ProductCard = ({ product }) => {
   const productRating = product.rating || product.averageRating || 0;
   const reviewCount = product.reviews?.length || 0;
   const outOfStock = product.stock < 1;
-  const inCart = product?.cartInfo?.inCart;
 
   return (
     <article className="group flex flex-col overflow-hidden border border-slate-100 bg-white transition duration-300 hover:-translate-y-1 hover:border-sky-100 hover:shadow-[0_20px_40px_-24px_rgba(2,137,222,0.45)]">
@@ -156,13 +214,14 @@ const ProductCard = ({ product }) => {
 
         <button
           type="button"
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm transition hover:text-rose-500"
-          onClick={() => handleWishlist(product._id)}
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-400 shadow-sm transition hover:text-rose-500 disabled:opacity-60"
+          onClick={(e) => handleWishlist(e, product._id)}
+          disabled={wishlistPending}
           aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`h-5 w-5 ${
+            className={`h-5 w-5 transition ${
               isInWishlist ? 'fill-rose-500 text-rose-500' : 'fill-none'
             }`}
             viewBox="0 0 24 24"
@@ -231,13 +290,19 @@ const ProductCard = ({ product }) => {
             <button
               type="button"
               className="px-3 py-2 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => handleAddToCart(product)}
-              disabled={outOfStock || inCart}
+              onClick={handleAddToCart}
+              disabled={outOfStock || inCart || cartPending}
               style={{
                 backgroundColor: outOfStock || inCart ? '#94a3b8' : '#0289de',
               }}
             >
-              {outOfStock ? 'Sold Out' : inCart ? 'In Cart' : 'Add'}
+              {cartPending
+                ? 'Adding...'
+                : outOfStock
+                  ? 'Sold Out'
+                  : inCart
+                    ? 'In Cart'
+                    : 'Add'}
             </button>
           </div>
         </div>

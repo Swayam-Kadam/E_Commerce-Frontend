@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getLogin } from './slice/loginSlice';
 import { toast}  from 'react-toastify';
 import routesConstants from '@/routes/routesConstants';
+import { getSafeRedirectPath } from '@/utils/auth';
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 
 const LoginPage = () => {
@@ -15,6 +16,8 @@ const LoginPage = () => {
    const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
 
   const { loading } = useSelector((state) => state.login || {});
@@ -47,10 +50,21 @@ const LoginPage = () => {
         const res = await dispatch(getLogin(payload));
         if (res?.payload?.tokens?.accessToken) {
           toast.success('Login Successfully');
+          const redirectFromQuery = searchParams.get('redirect');
+          const redirectFromState = location.state?.from
+            ? `${location.state.from.pathname || ''}${location.state.from.search || ''}`
+            : null;
+          const destination = getSafeRedirectPath(
+            redirectFromQuery || redirectFromState,
+            res.payload.user?.role === 'admin'
+              ? routesConstants.ADMIN
+              : routesConstants.HOMEPAGE
+          );
+
           if (res.payload.user?.role === 'admin') {
-            navigate(routesConstants?.ADMIN);
+            navigate(routesConstants.ADMIN);
           } else {
-            navigate(routesConstants?.HOMEPAGE);
+            navigate(destination);
           }
         } else if (res?.payload) {
           setAuthError(typeof res.payload === 'string' ? res.payload : 'Login failed');
@@ -230,7 +244,7 @@ const LoginPage = () => {
   <div className="relative">
     <input
       id="passwords"
-      name="passwords"z
+      name="passwords"
       type={showPassword ? "text" : "password"}
       onChange={formik.handleChange}
       onBlur={formik.handleBlur}
@@ -337,6 +351,12 @@ const LoginPage = () => {
                 Don't have an account?{' '}
                 <Link to='/signup' className="text-blue-600 hover:text-blue-800 font-medium transition-colors" >
                   Sign up
+                </Link>
+              </p>
+              <p className="text-sm text-gray-600">
+                Back To?{' '}
+                <Link to='/' className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                  Home
                 </Link>
               </p>
             </motion.div>

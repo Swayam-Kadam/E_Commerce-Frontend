@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import FloatOffer from '../common/FloatOffer';
 import RunningOffer from '../common/RunningOffer';
@@ -32,6 +32,14 @@ const perks = [
 ];
 
 const HomePage = () => {
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth', // smooth scrolling to top
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <RunningOffer />

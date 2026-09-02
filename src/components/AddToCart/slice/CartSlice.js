@@ -226,8 +226,13 @@ const cartSlice = createSlice({
   extraReducers: (builder) => {
         // Get all products
         builder.addCase(getCart.pending, (state) => {
-          state.cartItems = []
-          state.cartItemLoading = true;
+          const hasData =
+            state.cartItems &&
+            !Array.isArray(state.cartItems) &&
+            state.cartItems.items !== undefined;
+          if (!hasData) {
+            state.cartItemLoading = true;
+          }
         });
         
         builder.addCase(getCart.fulfilled, (state, action) => {
@@ -240,9 +245,23 @@ const cartSlice = createSlice({
         });
 
         builder.addCase(getCart.rejected, (state) => {
-          state.cartItems = [];
-          state.totalQuantity = 0;
           state.cartItemLoading = false;
+        });
+
+        builder.addCase(removeCart.fulfilled, (state, action) => {
+          const cart = action.payload?.data?.data;
+          if (cart) {
+            state.cartItems = cart;
+            state.totalQuantity = Array.isArray(cart?.items)
+              ? cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+              : 0;
+          }
+        });
+
+        builder.addCase(cleaAllCart.fulfilled, (state, action) => {
+          const cart = action.payload?.data?.data;
+          state.cartItems = cart || { items: [], total: 0, discount: 0 };
+          state.totalQuantity = 0;
         });
 
         builder.addCase(updateItemQuantity.pending, (state) => {

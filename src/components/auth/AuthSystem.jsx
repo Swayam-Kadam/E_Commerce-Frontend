@@ -489,6 +489,16 @@ const AuthSystem = () => {
                         Sign in
                       </button>
                     </p>
+
+                    <p className="text-sm text-gray-600">
+                      Already have an account?{' '}
+                      <button
+                        onClick={toggleAuthMode}
+                        className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                      >
+                        Sign in
+                      </button>
+                    </p>
                   </div>
                 </motion.div>
               )}

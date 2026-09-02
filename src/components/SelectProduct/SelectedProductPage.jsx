@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addCart, getCartCount } from '../AddToCart/slice/CartSlice';
 import { toggleWhishlist } from '../Wishlist/slice/WishlistSlice';
@@ -9,12 +9,15 @@ import * as Yup from 'yup';
 import { Rating } from '@smastrom/react-rating';
 import '@smastrom/react-rating/style.css';
 import { toast } from 'react-toastify';
-import { getSpecificProduct, getProduct } from '../home/slice/index';
+import { getSpecificProduct } from '../home/slice/index';
 import { addSpecificProductReview, getSpecificProductReview } from './slice';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { FiTruck, FiShield, FiRefreshCw, FiChevronRight } from 'react-icons/fi';
 import PageLoader from '../common/PageLoader';
-import { getCategoryName, matchesCategory } from '@/utils/category';
+import { getCategoryName } from '@/utils/category';
+import { axiosReact } from '@/services/api';
+import { ADDPRODUCT } from '@/services/url';
+import { buildLoginPath, isAuthenticated } from '@/utils/auth';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
@@ -36,6 +39,8 @@ const colorMap = {
 
 const SelectedProductPage = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
@@ -50,9 +55,7 @@ const SelectedProductPage = () => {
       specificProductReview: state.specificProduct.specificProductReview,
     })
   );
-  const { productList: allProducts = [] } = useSelector(
-    (state) => state.home || { productList: [] }
-  );
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   // Slice stores the product object directly (normalized); support legacy `{ data }` shape too
   const productData =
@@ -92,6 +95,12 @@ const SelectedProductPage = () => {
     },
     validationSchema,
     onSubmit: async (values, { resetForm }) => {
+      if (!isAuthenticated()) {
+        toast.info('Please log in to submit a review.');
+        navigate(buildLoginPath(`${location.pathname}${location.search || ''}`));
+        return;
+      }
+
       try {
         const payload = {
           id,
@@ -128,10 +137,33 @@ const SelectedProductPage = () => {
           setLoading(false);
         });
     }
-    if (!allProducts.length) {
-      dispatch(getProduct());
-    }
   }, [id, dispatch]);
+
+  useEffect(() => {
+    const category = getCategoryName(product?.category);
+    if (!category) {
+      setRelatedProducts([]);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '4',
+      category,
+    });
+
+    axiosReact
+      .get(`${ADDPRODUCT}?${params.toString()}`)
+      .then((response) => {
+        const items = (response.data?.data || []).filter(
+          (item) => String(item._id) !== String(id)
+        );
+        setRelatedProducts(items.slice(0, 3));
+      })
+      .catch(() => {
+        setRelatedProducts([]);
+      });
+  }, [product?.category, id]);
 
   useEffect(() => {
     if (productData) {
@@ -146,9 +178,22 @@ const SelectedProductPage = () => {
     }
   }, [productData]);
 
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth', // smooth scrolling to top
+    });
+  }, []);
+
   const handleAddToCart = () => {
     if (!product || !product._id) {
       toast.error('Invalid product');
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      toast.info('Please log in to add items to your cart.');
+      navigate(buildLoginPath(`${location.pathname}${location.search || ''}`));
       return;
     }
 
@@ -182,6 +227,12 @@ const SelectedProductPage = () => {
   };
 
   const handleWishlist = (ids) => {
+    if (!isAuthenticated()) {
+      toast.info('Please log in to manage your wishlist.');
+      navigate(buildLoginPath(`${location.pathname}${location.search || ''}`));
+      return;
+    }
+
     const payload = { productId: ids };
     dispatch(toggleWhishlist(payload)).then((res) => {
       if (res?.payload?.status === 200 || res?.payload?.status === 201) {
@@ -195,13 +246,6 @@ const SelectedProductPage = () => {
       }
     });
   };
-
-  const relatedProducts = allProducts
-    .filter((p) => {
-      if (p._id === id) return false;
-      return matchesCategory(p.category, getCategoryName(product?.category));
-    })
-    .slice(0, 3);
 
   const incrementQuantity = () => {
     if (product?.stock && quantity < product.stock) {
